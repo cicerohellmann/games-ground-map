@@ -489,7 +489,7 @@ function paintDayline(list, sel) {
   d.setAttribute("aria-valuetext", sel ? `${hhmm(sel.s)} ${sel.short || sel.title}` : "");
 }
 function pills(s) {
-  const st = ST[s.status] || ["", ""];
+  const st = s.idea && isAdded(s) ? ["Added · not booked", "idea"] : (ST[s.status] || ["", ""]);
   return st[0] ? `<span class="pill ${st[1]}">${esc(st[0])}</span>` : "";
 }
 function warnings(s, list) {
