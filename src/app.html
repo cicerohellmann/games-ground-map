@@ -243,7 +243,7 @@ const AREAS = [
 ];
 const ST = {
   confirmed: ["Confirmed", "confirmed"], booked: ["Booked", "booked"], pending: ["Waiting", "pending"],
-  planned: ["Plan", ""], "to cancel": ["To cancel", "cancel"], proposed: ["Idea · not booked", "idea"], pick: ["My pick", ""]
+  planned: ["Plan", ""], "not booked": ["Not booked", "pending"], "to cancel": ["To cancel", "cancel"], proposed: ["Idea · not booked", "idea"], pick: ["My pick", ""]
 };
 const PROGRAMME = (() => { try { return JSON.parse($("programme").textContent); } catch { return []; } })();
 
@@ -297,7 +297,7 @@ function allStops() {
     const p = PROGRAMME.find(x => x.id === pid);
     if (p) out.push(overlay(progToStop(p)));
   }
-  for (const id of Object.keys(mine.stops)) if (id.startsWith("m:")) out.push(overlay({ id, kind: "meeting", status: "planned", area: "", room: "Place not set", title: "" }));
+  for (const id of Object.keys(mine.stops)) if (id.startsWith("m:") && !mine.stops[id].dropped) out.push(overlay({ id, kind: "meeting", status: "planned", area: "", room: "Place not set", title: "" }));
   return stopsCache = out;
 }
 function progToStop(p) {
@@ -661,16 +661,18 @@ function renderNotes() {
   if (hall.length) h += `<div class="section-h">No set time</div>` + hall.map(s => ngroup(s, sel)).join("");
   return h;
 }
+const droppedStops = () => Object.keys(mine.stops).filter(id => mine.stops[id].dropped).map(id => overlay({ id, kind: "meeting", status: "planned", area: "", room: "", title: "" }));
+const everyStop = () => { const seen = new Set(); return [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops(), ...allStops(), ...droppedStops()].filter(s => !seen.has(s.id) && seen.add(s.id)); };
+const offLabel = s => s.dropped ? " (dropped from the plan)" : isSkipped(s) ? " (skipped)" : s.idea && !isAdded(s) ? " (idea, not added)" : "";
 function allNotesText() {
   const lines = [];
   const top = (label, id) => { const t = noteOf(id).text; if (t) lines.push(`## ${label}\n${t}\n`); };
   top("To do after the event", "_todo"); top("Other notes", "_free");
-  const stops = [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops()];
-  for (const s of stops) {
+  for (const s of everyStop()) {
     const n = noteOf(s.id), ans = n.answers || {};
     const qa = (s.qs || []).map(q => [q, ans[hash(q.t)]]).filter(([, a]) => a && (a.done || a.a));
     if (!n.text && !qa.length) continue;
-    lines.push(`## ${s.hall ? "" : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " "}${s.title}`);
+    lines.push(`## ${s.hall || s.dropped ? "" : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " "}${s.title}${offLabel(s)}`);
     for (const [q, a] of qa) lines.push(`Q: ${q.t}\nA: ${a.a || "(asked)"}`);
     if (n.text) lines.push(n.text);
     lines.push("");
@@ -681,13 +683,11 @@ function everythingText() {
   const lines = [];
   const top = (label, id) => { const t = noteOf(id).text; if (t) lines.push(`## ${label}\n${t}\n`); };
   top("To do after the event", "_todo"); top("Other notes", "_free");
-  const when = s => s.hall || !s.day ? "No set time " : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " ";
-  const seen = new Set(), stops = [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops(), ...allStops()].filter(s => !seen.has(s.id) && seen.add(s.id));
-  for (const s of stops) {
+  const when = s => s.dropped ? "" : s.hall || !s.day ? "No set time " : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " ";
+  for (const s of everyStop()) {
     const n = noteOf(s.id), ans = n.answers || {};
     if (!n.text && !(s.qs || []).length) continue;
-    const off = isSkipped(s) ? " (skipped)" : s.idea && !isAdded(s) ? " (idea, not added)" : "";
-    lines.push(`## ${when(s)}${s.title}${off}`);
+    lines.push(`## ${when(s)}${s.title}${offLabel(s)}`);
     for (const q of s.qs || []) {
       const a = ans[hash(q.t)];
       lines.push(`${a && (a.done || a.a) ? "[asked]" : "[not asked]"} ${q.t}`);
@@ -782,6 +782,8 @@ QUESTION: a question I can say out loud
 HINT: why ask it, or what a good answer sounds like
 QUESTION: the next question
 LISTEN: something to listen for
+RESET: yes (clears the old details of this stop first)
+REMOVE: yes (takes this stop out of your plan; your notes stay in the copy buttons)
 DONT: something to avoid
 WHY: why this is worth my time
 
@@ -811,7 +813,7 @@ function aiPrompt() {
     `The talks and meetings I have, and what I want from them: `
   ].join("\n\n");
 }
-const AI_KEYS = { STOP: "stop", TITLE: "title", SHORT: "short", DAY: "day", TIME: "time", WHERE: "room", ROOM: "room", WHO: "who", STATUS: "status", SAY: "say", WALK: "walk", QUESTION: "q", Q: "q", QUESTIONS: "qmode", HINT: "h", LISTEN: "listen", DONT: "dont", "DON'T": "dont", WHY: "verdict", NOTE: "note", PRACTICAL: "practical", ABOUT: "whoText", QLEAD: "qlead", REASON: "reason", NEED: "need", KIND: "kind", PROG: "prog", MORE: "more" };
+const AI_KEYS = { STOP: "stop", TITLE: "title", SHORT: "short", DAY: "day", TIME: "time", WHERE: "room", ROOM: "room", WHO: "who", STATUS: "status", SAY: "say", WALK: "walk", QUESTION: "q", Q: "q", QUESTIONS: "qmode", HINT: "h", LISTEN: "listen", DONT: "dont", "DON'T": "dont", WHY: "verdict", NOTE: "note", PRACTICAL: "practical", ABOUT: "whoText", QLEAD: "qlead", REASON: "reason", NEED: "need", KIND: "kind", PROG: "prog", MORE: "more", RESET: "reset", REMOVE: "remove" };
 function aiLines(txt) {
   const a = txt.search(/^\W*GG-START/mi), b = txt.search(/^\W*GG-END/mi);
   const src = a >= 0 ? txt.slice(a, b > a ? b : undefined) : txt;
@@ -830,7 +832,7 @@ function guessArea(room) {
   return hit ? hit[1] : "";
 }
 const slug = t => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32);
-const STATUS_IN = { confirmed: "confirmed", booked: "booked", waiting: "pending", pending: "pending", plan: "planned", planned: "planned", proposed: "proposed", idea: "proposed", cancel: "to cancel", "to cancel": "to cancel" };
+const STATUS_IN = { confirmed: "confirmed", booked: "booked", waiting: "pending", pending: "pending", plan: "planned", planned: "planned", "not booked": "not booked", proposed: "proposed", idea: "proposed", cancel: "to cancel", "to cancel": "to cancel" };
 const KINDS = ["talk", "meeting", "mentor", "social", "hallway"];
 const unline = v => v.replace(/\\n/g, "\n");   // a typed \n in a pasted value is a line break
 /* text -> a list of changes, nothing applied yet */
@@ -859,12 +861,15 @@ function aiParse(txt) {
     else if (key === "h") { if (lastQ && v) { lastQ.h = v; lastKey = "h"; } }
     else if (key === "listen") { if (v) { cur.listen.push(v); lastKey = "listen"; } }
     else if (key === "more") { const i = v.indexOf(" :: "); if (i > 0) cur.more.push({ h: v.slice(0, i), t: unline(v.slice(i + 4)) }); lastKey = null; }
+    else if (key === "reset") { cur.reset = true; lastKey = null; }
+    else if (key === "remove") { cur.remove = true; lastKey = null; }
     else if (key === "qmode") { if (/replace|rewrite/i.test(v)) cur.qsMode = "replace"; lastKey = null; }
     else { if (v) { cur.f[key] = unline(v); lastKey = key; } }
   }
   const ops = [];
   for (const b of blocks) {
     const code = b.stop.replace(/^#\s*/, "").trim(), low = code.toLowerCase();
+    if (b.remove) { const gone = code && byId(low); if (gone && low.startsWith("m:")) ops.push({ id: gone.id, kind: "remove", prog: null, fields: {}, qs: [] }); continue; }
     const fields = {};
     for (const k of ["title", "short", "who", "room", "say", "walk", "dont", "verdict", "note", "practical", "whoText", "qlead", "reason", "need"]) if (b.f[k]) fields[k] = b.f[k];
     if (b.f.kind && KINDS.includes(b.f.kind.toLowerCase())) fields.kind = b.f.kind.toLowerCase();
@@ -897,7 +902,7 @@ function aiParse(txt) {
     if (kind === "new" && fields.s == null) { fields.hall = true; fields.day = "any"; fields.s = null; fields.e = null; }
     if (kind === "new" && !fields.short) fields.short = b.f.title.slice(0, 18);
     if (!Object.keys(fields).length && !b.qs.length) { problems.push(`${code}: nothing to add under this STOP.`); continue; }
-    ops.push({ id, kind, prog, fields, qs: b.qs, qsMode: b.qsMode });
+    ops.push({ id, kind, prog, fields, qs: b.qs, qsMode: b.qsMode, reset: !!b.reset });
   }
   return { ops, problems };
 }
@@ -907,6 +912,7 @@ function opLabel(op) {
   const have = new Set(((cur && cur.qs) || []).map(q => qKey(q.t)));
   const nq = op.qs.filter(q => !have.has(qKey(q.t))).length;
   const bits = [];
+  if (op.kind === "remove") return { name, text: "removed from your plan" };
   if (op.kind === "new") bits.push("new stop");
   if (op.kind === "add") bits.push("added to your day");
   if (nq) bits.push(op.qsMode === "replace" ? `${nq} new, old questions replaced` : `${nq} new question${nq > 1 ? "s" : ""}`);
@@ -928,7 +934,7 @@ function aiShow() {
 }
 function sheetAI(msg) {
   const undo = store.get("gg.undo", null);
-  openSheet(`<h2>Fill it with your AI</h2>
+  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 3</p>
     <p><span class="step">1.</span> Tap Copy and paste it into your AI (Claude, ChatGPT, Gemini…). Right after it, type the talks and meetings you have and what you want from them. It gets your plan, your questions and the whole programme, not your notes.</p>
     <button class="btn primary" id="aicopy">Copy</button> <span class="subw" id="aicopied" style="font-size:14px"></span>
     <p style="margin-top:16px"><span class="step">2.</span> Copy the AI's answer and paste it here. New questions are added to your stops. Your answers and notes stay.</p>
@@ -936,7 +942,8 @@ function sheetAI(msg) {
     <div class="aifound" id="aifound"></div>
     <div class="actions"><button class="btn primary" id="aigo" disabled>Add to my app</button><label class="btn" style="position:relative;display:inline-flex;align-items:center;cursor:pointer"><input type="file" id="aifile" accept=".txt,text/plain" style="position:absolute;inset:0;opacity:0;width:100%;height:100%" aria-label="Pick a text file">Pick a text file</label>${undo ? `<button class="btn" id="aiundo">Undo last paste</button>` : ""}</div>
     ${msg ? `<p class="okline">${esc(msg)}</p>` : ""}
-    <details class="more"><summary>The format, if you write it by hand</summary><div class="in"><pre class="fmt">${esc(FORMAT)}</pre></div></details>`);
+    <details class="more"><summary>The format, if you write it by hand</summary><div class="in"><pre class="fmt">${esc(FORMAT)}</pre></div></details>
+    <details class="more"><summary>Clear everything</summary><div class="in"><p>This erases your pasted questions, answers, ticks and notes from this phone. Copy your notes first, on the Notes tab. There is no undo.</p><button class="btn" id="aiwipe">Erase everything</button></div></details>`);
   aiShow();
   const t = $("aiin"); if (t) { t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 2, 220) + "px"; }
 }
@@ -956,7 +963,13 @@ function aiApply() {
   let qCount = 0;
   for (const op of ops) {
     const cur = byId(op.id), ov = mine.stops[op.id] || {};
-    const next = { ...ov, ...op.fields };
+    if (op.kind === "remove") {
+      const n = noteOf(op.id);
+      if (n.text || Object.keys(n.answers || {}).length) mine.stops[op.id] = { ...ov, dropped: true };  // your notes stay in the copy buttons
+      else delete mine.stops[op.id];
+      continue;
+    }
+    const next = { ...(op.reset ? {} : ov), ...op.fields, dropped: false };
     if (op.qsMode === "replace") {
       const ans = noteOf(op.id).answers || {};
       const kept = ((cur && cur.qs) || []).filter(q => { const a = ans[hash(q.t)]; return a && (a.done || a.a); });  // answered questions never vanish
@@ -1039,6 +1052,11 @@ document.addEventListener("click", e => {
   if (t.id === "aicopy") { aiCopy(); return; }
   if (t.id === "aigo") { aiApply(); return; }
   if (t.id === "aiundo") { aiUndo(); return; }
+  if (t.id === "aiwipe") {
+    if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Tap again to erase it all"; return; }
+    for (const k of ["gg.pack", "gg.notes", "gg.state", "gg.plan", "gg.mine", "gg.undo", "gg.dirty", "gg.tab"]) { try { localStorage.removeItem(k); } catch {} }
+    location.reload(); return;
+  }
   if (t.id === "askgo") { ask(); return; }
 });
 document.addEventListener("input", e => {
