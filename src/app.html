@@ -649,7 +649,7 @@ function renderNotes() {
   if (pack && pack.meta && pack.meta.updated) h += `<div class="subw" style="font:500 12.5px var(--f-mono);margin-top:3px">Plan updated ${esc(pack.meta.updated)}</div>`;
   h += `<div class="lbl">To do after the event</div><textarea rows="2" placeholder="People to write to, things to send" data-note="_todo">${esc(noteOf("_todo").text || "")}</textarea>`;
   h += `<div class="lbl">No stop, just a note</div><textarea rows="2" placeholder="Anything" data-note="_free">${esc(noteOf("_free").text || "")}</textarea>`;
-  h += `<div class="actions"><button class="btn" id="copyall">Copy all my notes</button><span class="subw" id="copied" style="align-self:center;font-size:14px"></span></div>`;
+  h += `<div class="actions"><button class="btn" id="copyall">Copy all my notes</button><button class="btn" id="copyqs">Copy notes and all questions</button><span class="subw" id="copied" style="align-self:center;font-size:14px"></span></div>`;
   if (sample) h += `<div class="claude" id="claudebox"><b>Ask Claude about your notes</b>
       <textarea rows="2" id="askq" placeholder="What should I follow up on first?" style="margin-top:8px"></textarea>
       <div class="actions"><button class="btn primary" id="askgo">Ask</button></div><div class="answer" id="askout"></div></div>`;
@@ -676,6 +676,27 @@ function allNotesText() {
     lines.push("");
   }
   return lines.join("\n") || "No notes yet.";
+}
+function everythingText() {
+  const lines = [];
+  const top = (label, id) => { const t = noteOf(id).text; if (t) lines.push(`## ${label}\n${t}\n`); };
+  top("To do after the event", "_todo"); top("Other notes", "_free");
+  const when = s => s.hall || !s.day ? "No set time " : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " ";
+  const seen = new Set(), stops = [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops(), ...allStops()].filter(s => !seen.has(s.id) && seen.add(s.id));
+  for (const s of stops) {
+    const n = noteOf(s.id), ans = n.answers || {};
+    if (!n.text && !(s.qs || []).length) continue;
+    const off = isSkipped(s) ? " (skipped)" : s.idea && !isAdded(s) ? " (idea, not added)" : "";
+    lines.push(`## ${when(s)}${s.title}${off}`);
+    for (const q of s.qs || []) {
+      const a = ans[hash(q.t)];
+      lines.push(`${a && (a.done || a.a) ? "[asked]" : "[not asked]"} ${q.t}`);
+      if (a && a.a) lines.push(`Answer: ${a.a}`);
+    }
+    if (n.text) lines.push(`Note: ${n.text}`);
+    lines.push("");
+  }
+  return lines.join("\n") || "Nothing yet.";
 }
 let askAbort = null;
 async function ask() {
@@ -1012,6 +1033,7 @@ document.addEventListener("click", e => {
   if ("planoff" in d) { plan = null; store.set("gg.plan", null); plan = null; dirty.add("plan_photo"); markDirty("plan_photo"); paint(); return; }
   if (t.id === "nowBtn") { ui.manualAt = 0; followNow(); paint(); reveal(); return; }
   if (t.id === "themeBtn") { setTheme(curTheme() === "light" ? "dark" : "light"); return; }
+  if (t.id === "copyqs") { const m = $("copied"); copyText(everythingText()).then(() => m.textContent = "Copied", () => m.textContent = "Copy failed. Select text in Notes instead."); return; }
   if (t.id === "copyall") { const m = $("copied"); copyText(allNotesText()).then(() => m.textContent = "Copied", () => m.textContent = "Copy failed. Select text in Notes instead."); return; }
   if (t.id === "aiBtn" || "ai" in d) { sheetAI(); return; }
   if (t.id === "aicopy") { aiCopy(); return; }
