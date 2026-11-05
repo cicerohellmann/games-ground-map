@@ -973,7 +973,7 @@ function aiApply() {
     if (op.qsMode === "replace") {
       const ans = noteOf(op.id).answers || {};
       const kept = ((cur && cur.qs) || []).filter(q => { const a = ans[hash(q.t)]; return a && (a.done || a.a); });  // answered questions never vanish
-      next.qs = mergeQs(op.qs, kept); next.qsMode = "replace";  // the new order wins; old answered ones go last
+      next.qs = mergeQs(op.qs, kept.filter(k => !op.qs.some(q => qKey(q.t) === qKey(k.t)))); next.qsMode = "replace";  // the new order and hints win; old answered ones go last
     } else if (op.qs.length) next.qs = mergeQs(ov.qs, op.qs);
     qCount += op.qs.length;
     mine.stops[op.id] = next;
