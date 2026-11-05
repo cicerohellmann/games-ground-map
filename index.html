@@ -140,6 +140,19 @@ textarea::placeholder,input::placeholder{color:var(--muted)}
 .row.idea{border-style:dashed;background:transparent}
 .row .x{padding:0 12px 12px 12px;font-size:15px}
 .row .x .lbl{margin-top:8px}
+.brk{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;margin:0 0 7px;padding:7px 12px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);font-size:14px}
+.brk .bt{font:700 12.5px var(--f-mono);line-height:1.25}.brk .bt small{display:block;font-weight:400;opacity:.8}
+.brk.real{border:1px solid var(--ok);background:var(--ok-soft);color:var(--fg);font-size:15.5px;padding:10px 12px}.brk.real b{color:var(--ok)}
+.brk.past{opacity:.55}
+.brksum{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.brksum .lbl{margin:0 0 6px}.brksum .chips{display:flex;flex-wrap:wrap;gap:6px}
+.brksum .chip{font:700 12.5px var(--f-mono);padding:3px 8px;border-radius:99px;background:var(--ok-soft);color:var(--ok)}
+.brksum .flag{margin:8px 0 0}.brksum small{display:block;margin-top:6px;color:var(--muted);font-size:13px}
+.nextbrk{margin:8px 0 0;padding:7px 10px;border-radius:8px;background:var(--ok-soft);color:var(--fg);font-size:14.5px}.nextbrk b{color:var(--ok)}.nextbrk.none{background:var(--warn-soft)}.nextbrk.none b{color:var(--warn)}
+.blk.brkchip{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}.blk.brkchip .bl{color:var(--ok)}
+.blk.brkstop:not([aria-pressed="true"]){border-color:var(--ok);background:var(--ok-soft)}
+.pill.brkp{background:var(--ok-soft);color:var(--ok)}
+#dl-in .dl-br,.dl-br{position:absolute;top:-4px;height:8px;margin:0;border-radius:2px;background:var(--ok);opacity:.55}
 .gapnote{margin:-1px 0 7px 12px;font-size:13.5px;color:var(--gold)}
 .gapnote.bad{color:var(--warn)}
 .section-h{font:700 18px var(--f-display);margin:26px 0 8px}
@@ -312,6 +325,49 @@ const hallStops = () => allStops().filter(s => s.hall);
 
 function clashes(s, list) { return list.filter(o => o.id !== s.id && o.s < s.e && s.s < o.e); }
 function nextOf(s, list) { const i = list.findIndex(o => o.id === s.id); return i < 0 ? null : list.slice(i + 1).find(o => o.s >= s.e) || null; }
+/* breaks: worked out from your stops, so they follow any paste or skip */
+const REAL_BREAK = 20;
+const isBreakStop = s => s.kind === "break" || /^(free|eat|lunch|dinner|coffee|break)\b/i.test(s.title || "") || /\bthen (eat|lunch)\b/i.test(s.title || "");
+function gapsIn(list, from, to) {
+  const out = []; let at = from;
+  for (const s of list.slice().sort((a, b) => a.s - b.s)) {
+    if (s.s > at) out.push({ s: at, e: s.s, m: s.s - at });
+    at = Math.max(at, s.e);
+  }
+  if (to > at) out.push({ s: at, e: to, m: to - at });
+  return out.filter(g => g.m >= 5);
+}
+function breaksOf(day) {
+  const list = stopsOn(day); if (!list.length) return [];
+  return gapsIn(list.filter(s => !isBreakStop(s)), Math.min(...list.map(s => s.s)), Math.max(...list.map(s => s.e)));
+}
+function longestRun(day) {
+  const work = stopsOn(day).filter(s => !isBreakStop(s) && s.kind !== "social").sort((a, b) => a.s - b.s);
+  let best = null, cur = null;
+  for (const s of work) {
+    if (cur && s.s - cur.e < REAL_BREAK) cur.e = Math.max(cur.e, s.e); else cur = { s: s.s, e: s.e };
+    if (!best || cur.e - cur.s > best.e - best.s) best = { s: cur.s, e: cur.e };
+  }
+  return best;
+}
+const dur = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ""}`;
+function breakRow(g, day) {
+  const real = g.m >= REAL_BREAK, past = absNow() >= absAt(day, g.e);
+  return `<div class="brk${real ? " real" : ""}${past ? " past" : ""}"><span class="bt">${hhmm(g.s)}<small>${hhmm(g.e)}</small></span><span><b>${real ? "Break" : "Short break"}</b> · ${dur(g.m)}</span></div>`;
+}
+function breakSummary(day) {
+  const list = stopsOn(day); if (!list.length) return "";
+  const all = breaksOf(day), real = all.filter(g => g.m >= REAL_BREAK), short = all.length - real.length, run = longestRun(day);
+  return `<div class="brksum"><div class="lbl">Breaks of ${REAL_BREAK} min or more</div>${real.length ? `<div class="chips">${real.map(g => `<span class="chip">${hhmm(g.s)} · ${dur(g.m)}</span>`).join("")}</div>` : `<div>None.</div>`}
+    ${short ? `<small>Plus ${short} short ${short === 1 ? "gap" : "gaps"} under ${REAL_BREAK} min.</small>` : ""}
+    ${run && run.e - run.s >= 180 ? `<div class="flag"><b>Longest stretch with no real break:</b> ${hhmm(run.s)}–${hhmm(run.e)}, ${dur(run.e - run.s)}.</div>` : ""}</div>`;
+}
+function nextBreakLine(s) {
+  if (s.hall || !isActive(s)) return "";
+  if (isBreakStop(s)) return `<div class="nextbrk"><b>${/^(free|eat|lunch|dinner|coffee|break)\b/i.test(s.title || "") ? "This is a break." : "Part of this is a break."}</b></div>`;
+  const g = breaksOf(s.day).find(x => x.m >= REAL_BREAK && x.s >= s.e);
+  return g ? `<div class="nextbrk"><b>Next break</b> ${hhmm(g.s)}–${hhmm(g.e)}, ${dur(g.m)}</div>` : `<div class="nextbrk none"><b>No real break</b> after this today.</div>`;
+}
 function gapNote(a, b) {
   if (!a || !b) return null;
   const g = b.s - a.e;
@@ -452,10 +508,13 @@ function paintBar() {
   for (const b of $("tabs").children) b.setAttribute("aria-pressed", String(b.dataset.tab === ui.tab));
   $("clock").textContent = hhmm(n.m) + (today ? "" : " Berlin");
   const list = stopsOn(ui.day), sel = selected(), now = absNow();
+  const chips = gapsIn(list, list.length ? list[0].s : 0, list.length ? list[0].s : 0).filter(g => g.m >= REAL_BREAK);
+  const chipHtml = g => `<span class="blk brkchip"><span class="bt">${hhmm(g.s)}</span><span class="bl">Break ${dur(g.m)}</span></span>`;
   $("strip").innerHTML = list.map(s => {
+    const lead = chips.filter(g => g.e === s.s).map(chipHtml).join("");
     const past = now >= absAt(s.day, s.e);
     const fixed = s.status === "confirmed" || s.status === "booked";
-    return `<button class="blk${past ? " past" : ""}${s.status === "to cancel" ? " cancel" : ""}" data-sel="${esc(s.id)}" aria-pressed="${sel && sel.id === s.id}">${fixed ? '<span class="gm"></span>' : ""}<span class="bt">${hhmm(s.s)}</span><span class="bl">${esc(s.short || s.title)}</span></button>`;
+    return lead + `<button class="blk${past ? " past" : ""}${isBreakStop(s) ? " brkstop" : ""}${s.status === "to cancel" ? " cancel" : ""}" data-sel="${esc(s.id)}" aria-pressed="${sel && sel.id === s.id}">${fixed ? '<span class="gm"></span>' : ""}<span class="bt">${hhmm(s.s)}</span><span class="bl">${esc(s.short || s.title)}</span></button>`;
   }).join("") || `<span class="subw" style="padding:10px 2px;font-size:14px">Nothing picked for this day yet.</span>`;
   const on = $("strip").querySelector('[aria-pressed="true"]');
   if (on) { const st = $("strip"); st.scrollLeft = on.offsetLeft - st.offsetLeft - (st.clientWidth - on.offsetWidth) / 2; }
@@ -476,6 +535,7 @@ function paintDayline(list, sel) {
   } else if ((ui.day === "thu" && absNow() > absAt("thu", 1439))) {
     h += `<span class="dl-done" style="width:100%"></span>`;
   }
+  for (const g of breaksOf(ui.day).filter(x => x.m >= REAL_BREAK)) h += `<span class="dl-br" style="left:${pc(g.s)};width:calc(${pc(g.e)} - ${pc(g.s)})"></span>`;
   for (const s of list) {
     const pk = s.status === "confirmed" || s.status === "booked";
     h += `<span class="dl-n${pk ? " pk" : ""}${sel && sel.id === s.id ? " on" : ""}" style="left:${pc(s.s)}"></span>`;
@@ -490,7 +550,8 @@ function paintDayline(list, sel) {
 }
 function pills(s) {
   const st = s.idea && isAdded(s) ? ["Added · not booked", "idea"] : (ST[s.status] || ["", ""]);
-  return st[0] ? `<span class="pill ${st[1]}">${esc(st[0])}</span>` : "";
+  const brk = isBreakStop(s) ? `<span class="pill brkp">Break</span>` : "";
+  return brk + (st[0] ? `<span class="pill ${st[1]}">${esc(st[0])}</span>` : "");
 }
 function warnings(s, list) {
   let h = "";
@@ -528,6 +589,7 @@ function renderNext() {
     <div class="what">${esc(s.title)}</div>
     ${s.who ? `<div class="subw">${esc(s.who)}</div>` : ""}
     <div class="meta">${s.hall ? "" : `<span class="time">${s.day === "thu" ? "Thu" : "Fri"} ${hhmm(s.s)}–${hhmm(s.e)}</span>`} ${pills(s)}</div>
+    ${nextBreakLine(s)}
     ${warnings(s, list)}`;
   if (s.idea && s.reason) h += `<div class="lbl">Why this idea</div><div class="walk">${rich(s.reason)}</div>`;
   if (s.idea && !isAdded(s)) h += `<div class="actions"><button class="btn primary" data-add="${esc(s.id)}">Add to my day</button></div>`;
@@ -544,7 +606,7 @@ function renderNext() {
   if (extra.length) h += `<details class="more"><summary>More on this (${extra.length})</summary><div class="in">${extra.map(x => `<h4>${esc(x.h)}</h4>${rich(x.t)}`).join("\n")}</div></details>`;
   h += `<div class="lbl">Quick note</div><textarea rows="2" placeholder="Write anything here" data-note="${esc(s.id)}">${esc(n.text || "")}</textarea>`;
   if (nx) h += `<div class="lbl">Then</div>
-    ${gn ? `<div class="flag soft">${esc(gn.text)}</div>` : ""}
+    ${gn ? `<div class="flag soft">${esc(gn.text)}</div>` : nx.s - s.e >= 5 ? `<p class="subw" style="margin:0 0 8px">${dur(nx.s - s.e)} free first.</p>` : `<p class="subw" style="margin:0 0 8px">No break before this.</p>`}
     <button class="then" data-sel="${esc(nx.id)}"><span class="time">${hhmm(nx.s)}</span><span><b>${esc(nx.short || nx.title)}</b><small>${esc(nx.room)}</small></span><span aria-hidden="true">›</span></button>`;
   if (!s.hall) h += `<div class="actions">${
     isSkipped(s) ? `<button class="btn" data-unskip="${esc(s.id)}">Put back in my day</button>`
@@ -582,12 +644,14 @@ function rowHtml(s, list, sel) {
 function renderDay() {
   const sel = selected(), active = stopsOn(ui.day);
   const all = allStops().filter(s => s.day === ui.day && !s.hall).sort((a, b) => a.s - b.s || a.e - b.e);
-  let h = "";
+  let h = breakSummary(ui.day);
   all.forEach(s => {
     h += rowHtml(s, active, sel);
     if (isActive(s)) {
-      const gn = gapNote(s, nextOf(s, active));
+      const nx = nextOf(s, active), gn = gapNote(s, nx);
       if (gn) h += `<div class="gapnote${gn.g === 0 ? " bad" : ""}">${esc(gn.text)}</div>`;
+      else if (nx && nx.s === s.e) h += `<div class="gapnote">No break before ${esc(nx.short || nx.title)}.</div>`;
+      if (nx && nx.s - s.e >= 5 && !active.some(o => o.s < nx.s && o.e > s.e)) h += breakRow({ s: s.e, e: nx.s, m: nx.s - s.e }, ui.day);
     }
   });
   if (!all.length) h += `<p class="empty">Nothing picked for this day yet. Add talks from the programme below.</p>`;
@@ -934,7 +998,7 @@ function aiShow() {
 }
 function sheetAI(msg) {
   const undo = store.get("gg.undo", null);
-  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 6</p>
+  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 7</p>
     <p><span class="step">1.</span> Tap Copy and paste it into your AI (Claude, ChatGPT, Gemini…). Right after it, type the talks and meetings you have and what you want from them. It gets your plan, your questions and the whole programme, not your notes.</p>
     <button class="btn primary" id="aicopy">Copy</button> <span class="subw" id="aicopied" style="font-size:14px"></span>
     <p style="margin-top:16px"><span class="step">2.</span> Copy the AI's answer and paste it here. New questions are added to your stops. Your answers and notes stay.</p>
