@@ -1,0 +1,1091 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#111017"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Games Ground"><link rel="apple-touch-icon" href="icons/icon-180.png"><link rel="icon" href="icons/icon-192.png"></head><body><title>Games Ground Day</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#111017;--surface:#1c1a25;--surface-2:#2a2734;--fg:#efedf5;--muted:#a6a2b8;--line:#36324a;
+  --accent:#ff5cb0;--accent-fg:#1a0b13;--accent-soft:#3d1830;--gold:#ffc533;--gold-soft:#3a2e0c;
+  --now:#45d3d6;--ok:#74dc93;--ok-soft:#14321f;--warn:#ff8a70;--warn-soft:#3e1b14;
+  --f-display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r:10px;
+  --gl:max(16px,env(safe-area-inset-left,0px));--gr:max(16px,env(safe-area-inset-right,0px));
+}
+:root[data-gg-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f3f8;--surface:#fff;--surface-2:#e7e5ee;--fg:#17151f;--muted:#5f5b6f;--line:#d8d5e2;
+  --accent:#b8156f;--accent-fg:#fff;--accent-soft:#f8dcec;--gold:#a87300;--gold-soft:#fbedc6;
+  --now:#0d8589;--ok:#17743a;--ok-soft:#d9f2e1;--warn:#b5381c;--warn-soft:#fbe1da;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.45 var(--f-body);
+  padding-left:var(--gl);padding-right:var(--gr);padding-block:0 calc(84px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{font-family:var(--f-display);margin:0;line-height:1.15}
+a{color:var(--now)}
+:focus-visible{outline:2px solid var(--now);outline-offset:2px}
+
+/* ---------- top bar: on every screen ---------- */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);
+  margin-left:calc(var(--gl) * -1);margin-right:calc(var(--gr) * -1);
+  padding:8px var(--gr) 2px var(--gl);border-bottom:1px solid var(--line)}
+.row1{display:flex;align-items:center;gap:8px}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--muted);min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--fg)}
+.clock{font:700 13px var(--f-mono);color:var(--now);margin-left:auto;white-space:nowrap}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;min-height:36px;min-width:36px}
+.ghost.icon{padding:0;width:36px;display:grid;place-items:center}
+.ghost.icon svg{width:16px;height:16px;display:block}
+.blocks{display:flex;gap:4px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:8px 0 6px;margin-right:calc(var(--gr) * -1);padding-right:var(--gr)}
+.blocks::-webkit-scrollbar{display:none}
+.blocks::before,.blocks::after{content:"";flex:0 0 40vw}
+.blk{flex:none;display:grid;gap:1px;text-align:left;position:relative;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 9px 5px;min-height:44px;max-width:124px;overflow:hidden}
+.blk .bt{font:700 11.5px var(--f-mono)}
+.blk .bl{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk .gm{position:absolute;left:0;right:0;top:0;height:3px;background:var(--gold)}
+.blk.cancel .bl{text-decoration:line-through}
+.blk.past{opacity:.55}
+.blk[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);opacity:1}
+.blk[aria-pressed="true"] .bl{color:var(--accent-fg)}
+.dayline{position:relative;height:40px;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+.dayline::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line)}
+.dl-in{position:absolute;inset:0 6px}
+.dl-in>span{position:absolute;top:50%;pointer-events:none}
+.dl-done{left:0;height:3px;margin-top:-1px;border-radius:2px;background:var(--now);opacity:.85}
+.dl-n{width:3px;height:11px;margin:-5px 0 0 -1.5px;border-radius:1px;background:var(--muted)}
+.dl-n.pk{width:4px;height:15px;margin:-7px 0 0 -2px;background:var(--gold);box-shadow:0 0 0 1.5px var(--bg)}
+.dl-n.on{width:7px;height:21px;margin:-10px 0 0 -3.5px;border-radius:3px;background:var(--accent);box-shadow:0 0 0 1.5px var(--bg);z-index:2}
+.dl-now{width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--now);box-shadow:0 0 5px 1px var(--now);z-index:3}
+.hours{position:relative;height:14px;margin:0 6px 4px;font:500 10px var(--f-mono);color:var(--muted)}
+.hours span{position:absolute;transform:translateX(-50%);top:0}
+.hours span:first-child{transform:none}
+
+.banner{margin:10px 0 0;padding:9px 12px;border-radius:var(--r);background:var(--gold-soft);color:var(--fg);font-size:14px;border:1px solid var(--gold)}
+main{padding-top:14px;max-width:680px;margin-inline:auto}
+
+/* ---------- bottom tabs ---------- */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);
+  padding:4px var(--gr) calc(4px + env(safe-area-inset-bottom,0px)) var(--gl)}
+.tabs button{border:0;background:transparent;font-weight:700;font-size:14px;color:var(--muted);padding:12px 0;border-radius:8px;min-height:48px}
+.tabs button[aria-pressed="true"]{color:var(--accent-fg);background:var(--accent)}
+
+/* ---------- shared bits ---------- */
+.pill{display:inline-block;font:700 11px var(--f-mono);padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.confirmed{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.pill.booked{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.pill.pending{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+.pill.cancel{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.pill.idea{border-style:dashed;color:var(--fg)}
+.flag{margin:8px 0;padding:8px 11px;border-radius:8px;background:var(--warn-soft);border-left:3px solid var(--warn);font-size:14.5px}
+.flag.soft{background:var(--gold-soft);border-left-color:var(--gold)}
+.lbl{font:700 11.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:20px 0 6px}
+.time{font:700 14px var(--f-mono)}
+.empty{color:var(--muted);padding:24px 4px;text-align:center}
+textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 11px;font-size:16px;line-height:1.4;resize:none;display:block;min-height:44px;overflow:hidden}
+textarea::placeholder,input::placeholder{color:var(--muted)}
+.more{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.more summary{padding:11px 12px;font-weight:700;font-size:14.5px;cursor:pointer;min-height:44px}
+.more .in{padding:0 12px 12px;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.more .in h4{margin:12px 0 2px;font:700 11.5px var(--f-mono);color:var(--muted);white-space:normal}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:9px 13px;font-weight:700;font-size:14px;min-height:44px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.small{min-height:36px;padding:5px 10px;font-size:13px}
+
+/* ---------- next ---------- */
+.count{font:700 14px var(--f-mono);color:var(--now);letter-spacing:.03em}
+.count.done{color:var(--muted)}
+.where{font:700 32px/1.08 var(--f-display);margin:4px 0 6px;overflow-wrap:anywhere}
+.what{font-size:18px;font-weight:700;line-height:1.25}
+.subw{color:var(--muted);margin-top:2px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.say{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:11px 13px;font-size:17px;line-height:1.35}
+.walk{background:var(--surface);border-radius:8px;padding:11px 13px;border:1px solid var(--line)}
+.qs{display:grid;gap:8px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px 10px 8px;display:grid;grid-template-columns:44px 1fr;gap:0 4px}
+.q .tick{width:44px;height:44px;border:0;background:transparent;display:grid;place-items:center;padding:0}
+.q .tick i{width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center}
+.q.done .tick i{background:var(--ok);border-color:var(--ok)}
+.q.done .tick i::after{content:"";width:9px;height:5px;border-left:2px solid var(--bg);border-bottom:2px solid var(--bg);transform:translateY(-1px) rotate(-45deg)}
+.q .qt{font-size:16.5px;line-height:1.32;padding-top:9px;background:none;border:0;text-align:left;padding-inline:0;padding-bottom:0}
+.q.done .qt{color:var(--muted)}
+.q .h{grid-column:2;color:var(--muted);font-size:13.5px;margin-top:5px;white-space:pre-wrap}
+.q .a{grid-column:2;margin-top:8px}
+.ul{margin:0;padding:0 0 0 18px}
+.ul li{margin:5px 0}
+.dont{padding:10px 12px;border-radius:8px;background:var(--warn-soft);font-size:15px}
+.then{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:6px;min-height:52px}
+.then small{display:block;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* ---------- day ---------- */
+.row{border:1px solid var(--line);background:var(--surface);border-radius:10px;margin-bottom:6px;scroll-margin:190px 0 90px}
+.row>button.head{width:100%;background:none;border:0;text-align:left;display:grid;grid-template-columns:56px 1fr;gap:10px;padding:11px 12px;min-height:56px}
+.row .t{font:700 14px/1.25 var(--f-mono)}
+.row .t small{display:block;color:var(--muted);font-weight:500;font-size:11.5px}
+.row .tt{font-weight:700;line-height:1.25}
+.row .rm{color:var(--muted);font-size:14px;margin-top:2px}
+.row .p{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.row.on{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.row.past{opacity:.6}.row.on.past{opacity:1}
+.row.skip{opacity:.5}
+.row.cancel .tt{text-decoration:line-through}
+.row.idea{border-style:dashed;background:transparent}
+.row .x{padding:0 12px 12px 12px;font-size:15px}
+.row .x .lbl{margin-top:8px}
+.gapnote{margin:-1px 0 7px 12px;font-size:13.5px;color:var(--gold)}
+.gapnote.bad{color:var(--warn)}
+.section-h{font:700 18px var(--f-display);margin:26px 0 8px}
+.search{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 11px;min-height:44px;font-size:16px;margin-bottom:8px}
+.prog{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border-top:1px solid var(--line);padding:9px 0}
+.prog button.pt{background:none;border:0;text-align:left;padding:0;min-height:40px}
+.prog .pt b{display:block;font-size:15px;line-height:1.25}
+.prog .pt small{color:var(--muted);font-size:13px}
+
+/* ---------- map ---------- */
+.plan-photo{display:block;width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;padding:0;background:none;overflow:hidden}
+.plan-photo img{display:block;width:100%}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.tile{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;text-align:left;min-height:88px;display:flex;flex-direction:column;gap:6px}
+.tile.wide{grid-column:1/-1}
+.tile b{font:700 15.5px var(--f-display)}
+.tile.on{border-color:var(--accent);background:var(--accent-soft)}
+.dots{display:flex;flex-wrap:wrap;gap:4px}
+.dot{font:700 11.5px var(--f-mono);background:var(--surface-2);padding:2px 7px;border-radius:999px}
+.dot.on{background:var(--accent);color:var(--accent-fg)}
+.dot.pk{outline:1px solid var(--gold)}
+
+/* ---------- notes ---------- */
+.sync{font:500 12.5px var(--f-mono);color:var(--muted);display:flex;gap:7px;align-items:center}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.sync.ok i{background:var(--ok)}.sync.busy i{background:var(--gold)}.sync.off i{background:var(--warn)}
+.ngroup{border-top:1px solid var(--line);padding:12px 0;scroll-margin:190px 0 90px}
+.ngroup.on>h3{color:var(--accent)}
+.ngroup h3{font-size:16px;margin-bottom:6px}
+.ngroup h3 button{all:unset;cursor:pointer;display:block;padding:8px 0;min-height:36px;box-sizing:border-box}
+.ngroup .ans{font-size:14.5px;margin:6px 0;padding-left:10px;border-left:2px solid var(--line)}
+.ngroup .ans b{display:block;font-weight:400;color:var(--muted);font-size:13.5px}
+.claude{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:14px}
+.answer{white-space:pre-wrap;margin-top:10px;font-size:15.5px}
+
+/* ---------- AI: copy, paste back ---------- */
+.step{font-weight:700}
+.sheet p{margin:8px 0}
+.aifound{font-size:14.5px;margin-top:10px}
+.aifound ul{margin:6px 0 0;padding-left:18px;max-height:30vh;overflow:auto}
+.aifound li{margin:4px 0}
+.aifound .bad{color:var(--warn)}
+.okline{color:var(--ok);font-weight:700}
+.fmt{font:500 12.5px/1.45 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+
+/* ---------- sheet + zoom ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:16px 16px 0 0;max-height:78vh;overflow:auto;
+  padding:16px var(--gr) calc(20px + env(safe-area-inset-bottom,0px)) var(--gl);border-top:1px solid var(--line)}
+.sheet h2{font-size:20px;margin-bottom:6px}
+.sheet .close{float:right}
+.pick{width:100%;display:grid;grid-template-columns:auto 1fr;gap:10px;text-align:left;background:var(--surface-2);border:0;border-radius:8px;padding:11px;margin-top:6px;min-height:48px}
+.zoom{position:fixed;inset:0;z-index:50;background:#000;overflow:auto;touch-action:auto}
+.zoom img{display:block;width:240%;max-width:none}
+.zoom button{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px}
+.zoom .ghost{color:#fff;background:#222;border-color:#555}
+@media (max-width:370px){.seg button{padding-inline:8px}.ghost{padding-inline:9px}.clock{font-size:12px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
+<header class="bar" id="bar">
+  <div class="row1">
+    <div class="seg" id="seg" role="group" aria-label="Day">
+      <button data-day="thu">Thu 5</button><button data-day="fri">Fri 6</button>
+    </div>
+    <div class="clock" id="clock"></div>
+    <button class="ghost" id="nowBtn">Now</button>
+    <button class="ghost" id="aiBtn" aria-haspopup="dialog">AI</button>
+    <button class="ghost icon" id="themeBtn" aria-label="Switch theme"></button>
+  </div>
+  <div class="blocks" id="strip"></div>
+  <div class="dayline" id="dayline" role="slider" tabindex="0" aria-label="Move through the day"><div class="dl-in" id="dl-in"></div></div>
+  <div class="hours" id="hours"></div>
+</header>
+<div class="banner" id="banner" hidden></div>
+<main id="main"></main>
+<nav class="tabs" id="tabs" aria-label="Views">
+  <button data-tab="next">Next</button><button data-tab="day">Day</button><button data-tab="map">Map</button><button data-tab="notes">Notes</button>
+</nav>
+<div id="overlay"></div>
+
+<script id="programme" type="application/json">[{"id":"p03","day":"thu","s":600,"e":650,"title":"Expand Your Reach and Competitiveness by Optimizing Your Game’s Power Usage - SGA Impact Track","who":"Maria Wagner, A. Burak Erbora, Andreas Horn, Ashe Foltin","comp":"Sustainable Games Alliance, Kolibri Games, ByteRockers' Games, Bold Beetle Games","room":"Cage Stage","area":"cage","cat":"Talk","track":"Impact","desc":"As hardware costs rise and players keep older devices for longer, optimizing games is increasingly important, not just for performance, but also for reach and competitiveness. This panel with experts from Kolibri Games and Byte Rockers will explore how studios can make their games run efficiently across a wider range of hardware, extending access to players while reducing energy consumption. Speakers will share hands-on tools, techniques, and real-world examples that studios can use to optimize their games. The key takeaway: better energy efficiency often means better performance, smoother gameplay, and a better player experience. ‍"},{"id":"p01","day":"thu","s":600,"e":640,"title":"Bringing Rome to Life: The Rendering of 'Anno 117: Pax Romana'","who":"Aaron Scherzinger","comp":"Ubisoft Mainz","room":"Portal Stage","area":"portal","cat":"Talk","track":"Tech","desc":"Anno 117: Pax Romana faces a unique set of technical challenges when it comes to rendering its highly dynamic world. Visuals range from overlooking entire cities to observing tiny details in the daily activities of their residents, and all of it is built by the player. This talk provides an overview of key engine improvements that were made during the development of Anno 117 and how these helped shape the look of the game. In particular it will cover how complex assets like buildings are optimized while being adaptive to uneven terrain and how Raytracing was implemented to facilitate the flexibility and scale required by an Anno game."},{"id":"p02","day":"thu","s":600,"e":640,"title":"Beyond the Default Wardrobe: Building Authentic Clothing for MetaHumans","who":"Mahmoud Alkawadri","comp":"NOETA Academy","room":"Relic Stage","area":"relic","cat":"Talk","track":"Arts","desc":"This technical and creative session explores the complete workflow of building authentic, resizable cultural clothing for MetaHumans in Unreal Engine, using a production wardrobe asset developed for Fab as a real-world case study.Starting from cultural references and garment design, we will look at how silhouette, proportions, layering and material behavior are translated into a digital garment while preserving its visual identity. The session then moves into the technical pipeline: preparing the garment for MetaHuman, building a resizable outfit that works across different body proportions, setting up Chaos Cloth simulation, weight maps and constraints, and balancing believable fabric behavior with real-time performance.Rather than showing only the final result, the talk will examine practical production challenges and failure cases—including clipping, deformation, unstable simulation, loss of silhouette and resizing limitations—and how these problems can be approached.The goal is to connect artistic decision-making with Unreal Engine’s real-time character and cloth systems, and show what it takes to turn a culturally authentic garment into a flexible, production-ready digital wardrobe asset."},{"id":"p05","day":"thu","s":650,"e":690,"title":"Designing the Unknown: Creature Design in Subnautica 2","who":"Alex Heese","comp":"Unknown Worlds Entertainment","room":"Portal Stage","area":"portal","cat":"Talk","track":"Game Design","desc":"Exploring an unknown world, discovering its many secrets and walking the fine line between terror and fascination have been strong pillars of Subnautica 2's design. We will cover how creatures in Subnautica 2 are designed to support these pillars, and how the process is an exploration itself. Discovering what a creature is together as a team, much like players would later discover these creatures for themselves in the game. Using real examples from the game, we follow the process from ideation and concepting to prototyping and implementation - and we also learn about how to navigate when major project requirements change, or designs simply do not work out. This talk is aimed at anyone interested in some of the creative processes behind Subnautica 2, and many of the lessons learned apply well beyond creature design! ‍"},{"id":"p04","day":"thu","s":650,"e":690,"title":"Creativity in the Age of AI","who":"Fawzi Mesmar","comp":"Ubisoft","room":"Relic Stage","area":"relic","cat":"","track":"Game Design","desc":"As artificial intelligence becomes an ever-present collaborator, the question is how we, as humans, can remain authentic in our own creativity. In this talk, Fawzi Mesmar uses his framework of creative sobriety: a method for cutting through noise, reclaiming originality, and cultivating ideas in ways no machine can. He will also explore our responsibility as creators: to ourselves, to our industry, and to the audiences we serve while confronting the creative dilemma: the truth that creativity demands vulnerability, and the courage to move forward in spite of fear. In a world where AI is everywhere, and existential threat to many crafts people is around the corner, staying true to your vision armed with authenticity is still uniquely human."},{"id":"p06","day":"thu","s":660,"e":710,"title":"Choosing Service Providers: Tools, Sovereignty and Transparency in the Age of AI and Multi-Crisis - SGA Impact Track","who":"Laura Bauer, Kristian Metzger, Oliver Stock, Jiri Kupiainen","comp":"KI Bundesverband | Digital Sovereignty, Stratosphere Games, Walk The Frog, Sustainable Games Alliance","room":"Cage Stage","area":"cage","cat":"Talk","track":"Impact","desc":"This panel explores how game developers and studios can navigate the growing landscape of AI tools and service providers, considering digital sovereignty, transparency, data ownership, and creative independence. Participants will gain a better understanding of available tools, their trade-offs, and key criteria for making more informed decisions."},{"id":"p07","day":"thu","s":680,"e":770,"title":"Community Doesn't Happen by Accident: Building, Growing & Protecting Game Developer Communities - Community Clubhouse","who":"Mafalda Duarte, Christopher Hamilton","comp":"Aiba / IGDA Board of Directors","room":"Intraprenör","area":"intra","cat":"Workshop","track":"","desc":"Whether you're starting a new game developer community or helping an established one thrive, building a successful community takes more than bringing people together. In this interactive workshop, we'll explore how to build, grow and support game developer communities, with a particular focus on creating safe, welcoming and inclusive environments. Through shared experiences and practical discussions, we'll examine what works, what doesn't, and how community organizers can navigate challenges, build trust and ensure their communities remain places where everyone feels they belong. ‍"},{"id":"p08","day":"thu","s":700,"e":740,"title":"From 0 to Full Scale Live Ops - Legacy Game","who":"Matthieu Burleraux","comp":"Rovio Entertainment","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"How is Rovio turning a 134 years old game initially made for web into a high profit Live Ops driven game."},{"id":"p09","day":"thu","s":705,"e":755,"title":"The Art of Storytelling Between Passive and Interactive Cinematics","who":"Igor Sobolev, Theodore Hilhorst, Paweł Ochocki","comp":"Hangar13 (2K), CD PROJEKT RED","room":"Portal Stage","area":"portal","cat":"Talk","track":"Game Design","desc":"What happens when traditional filmmaking meets the ultimate interactive medium? Join industry veterans from CD PROJEKT RED and 2K ( Cyberpunk 2077 , Witcher 3: Wild Hunt , Mafia: The Old Country ) for a nuanced, lively debate on the delicate balance between passive and active entertainment.Far from being a simple \"chill\" experience, crafting cinematics in video games means constantly bridging the gap between linear storytelling and player interactivity. Together, our speakers explore the complexities of player agency: How do choices and branching narratives alter emotional impact? Does giving players too much control dilute the creative vision, or does it deepen ludonarrative resonance? From the psychological weight of voiced versus silent protagonists to the unique challenges of writing stoic characters and handling player-driven flow states, this session dives deep into the architecture of modern game storytelling.Whether you're a developer, writer, or cinematic artist, come rethink how we design narrative tension when the audience holds the controller."},{"id":"p10","day":"thu","s":720,"e":770,"title":"ADHD and Game Development: Making the Invisible Playable - SGA Impact Track","who":"Hendrik Lesser, Valtteri “Wanda” Lahti, Luca Scaramuzzino","comp":"Remote Control Productions, Psyon Games, Firepunchd Games","room":"Cage Stage","area":"cage","cat":"Talk","track":"Impact","desc":"How can games help us understand experiences different from our own and turn that understanding into action? Inspired by Psyon Games’ award-winning FULL ADHD, the panelists explore the connections between lived experience, game design and better leadership. From authentic representation to practical improvements at the workplace, the discussion asks how games can challenge assumptions, foster inclusion and support health awareness - in the games industry and beyond."},{"id":"p12","day":"thu","s":750,"e":810,"title":"LUNCH BREAK","who":"","comp":"","room":"Portal Stage","area":"portal","cat":"Talk","track":"","desc":""},{"id":"p11","day":"thu","s":750,"e":790,"title":"Why video games funding totals are growing 20% YoY on Kickstarter","who":"Michael Liebe","comp":"Kickstarter","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"Self-publishing is the new go-to market strategy for many game studios. From fresh start-ups, to seasoned Indies, to AA and AAA. Kickstarter plays a vital role for many games in this trend. We will explore based on data and insights why a small campaign also helps, how to make a big campaign and where a clear profile of both, studio and IP, come in.That said, there will be plenty of time for a gamified Q&A, so bring your questions and get ready for some fruitful discussions"},{"id":"p13","day":"thu","s":770,"e":830,"title":"LUNCH BREAK","who":"","comp":"","room":"Cage Stage","area":"cage","cat":"Talk","track":"","desc":""},{"id":"p14","day":"thu","s":780,"e":900,"title":"Managing Burnout in Games","who":"Sky Tunley-Stainton, Izzie Micul","comp":"Safe In Our World","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Business","desc":"Burnout remains a pervasive issue across the games industry, no matter one's role or seniority. In the 2026 Salary & Satisfaction report by Skillsearch, 67% of respondents had experienced excessive stress or burnout in the last year. In the most recent Ukie census, 29% of respondents reported working over 50 hours in a week at least once in the last 12 months. This session looks at how individuals can support themselves and their colleagues in implementing healthy work practices, as well as highlighting practical, individual tools to combat burnout and navigate occasions where our workloads are heavier. Learning Objectives: - Understand what 'burnout' means, and how it differs from stress - Recognise common contributing factors to burnout and crunch behaviours (both inside and outside of work) - Understand how passion can increase risk of burnout - Spot the signs of burnout before they become an issue - Learn practical tools for addressing burnout symptoms when they arise"},{"id":"p15","day":"thu","s":790,"e":850,"title":"LUNCH BREAK","who":"","comp":"","room":"Relic Stage","area":"relic","cat":"Talk","track":"","desc":""},{"id":"p16","day":"thu","s":810,"e":850,"title":"Building Your Discord Server Through Every Stage of Game Development","who":"Anthony Tešija","comp":"Discord","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"Your Discord server isn't just a community, it's a development tool. This talk walks through building a server that works for you at every stage of your game's development. We'll talk about channels, roles, events, moderation, and how to bring players from your game into your community and keep them engaged."},{"id":"p17","day":"thu","s":830,"e":880,"title":"Beyond the Mute Button: Measuring the Impact of Live Voice Moderation","who":"Michael Frasier, Jan Lachauer","comp":"Voice Patrol, Independent","room":"Cage Stage","area":"cage","cat":"Talk","track":"","desc":"From ‘just mute them’ to measurable cascading safety - what actually changed in the first 90 days after we turned on live voice moderation."},{"id":"p18","day":"thu","s":850,"e":890,"title":"Expanding your audience - Multi-Platform Development and Porting","who":"Attilio Carotenuto","comp":"Unity","room":"Relic Stage","area":"relic","cat":"Talk","track":"Tech","desc":"Developing and porting a game to multiple platforms and storefronts can significantly increase your userbase, but it does not come for free. In this talk, I will share stories, business considerations, tips and pitfalls, and advanced techniques that will help you decide where to launch your game, delivering an optimised experience tailored for each platform and audience."},{"id":"p19","day":"thu","s":860,"e":900,"title":"The New Bar - What Game Studios Are Actually Looking For in 2026","who":"Valeria Rossi","comp":"Remedy Entertainment","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"Hiring in the game industry looks different today than it did just a few years ago. Increased competition and shifting priorities have changed what studios expect from candidates at all levels. Drawing from experience in Talent Acquisition across gaming in Europe, this talk explores how the “bar” for talent has evolved. I’ll share common patterns I see in applications and interviews, why strong candidates are often overlooked, and what developers can do to better align with current expectations."},{"id":"p20","day":"thu","s":890,"e":940,"title":"It's Not Just Voice Chat: Building Safer Game Communities - Community Clubhouse","who":"Michael Schmotz, Felix Mohring","comp":"Armative Studios, 4Players","room":"Cage Stage","area":"cage","cat":"Talk","track":"","desc":"A developer-led conversation on bringing voice chat and moderation into a live game, from the perspective of a studio that knows it matters and wants to get it right."},{"id":"p21","day":"thu","s":900,"e":940,"title":"Crafting a Story Machine: Structuralist approaches to Modular Game Narrative Design","who":"Pragya Mukherjee","comp":"Papercoda Games","room":"Relic Stage","area":"relic","cat":"Talk","track":"Game Design","desc":"Delving deep into theory and practice, and drawing from 5+ years of experience crafting modular narrative systems, this talk explores how designers can create truly responsive narrative worlds without a combinatorial explosion of content. In addition to general best practices and examples from successful game designers as well as the speaker's own work, the talk demonstrates how anthropologist Claude Lévi-Strauss's structuralist study of myths in the previous century can prove surprisingly helpful in designing flexible game narrative systems that remain coherent and provide variable consequences as they modularly adjust to players' choices. Achieving great narrative flexibility and freedom with finite content is the holy grail of IDN, and this talk outlines practical strategies and tricks for providing players the experience of such freedom with a limited content budget."},{"id":"p23","day":"thu","s":910,"e":970,"title":"Is my Game blind-accessible?","who":"Stefan Wilhelm","comp":"Inclusive Gaming","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Game Design","desc":"In this experimental format, one of our game prototypes get's tested live by a blind gamer. Get a unique insight into a completely different playstyle where sounds and haptics are your best friends and the screenreader guides you. Is it possible to play the game? Let's find out! ‍"},{"id":"p22","day":"thu","s":910,"e":950,"title":"The Art Direction of Corsair Cove","who":"Simon Klinz","comp":"Limbic Entertainment","room":"Portal Stage","area":"portal","cat":"Talk","track":"Arts","desc":"Set sails into the uncharted waters of Limbic’s pirate city-builder Corsair Cove! Together, we'll explore how unique vertical placement mechanics shaped the island and building design, how an ocean shifts your artistic priorities, why there are pigs everywhere and how to make it all happen with a small team. ‍"},{"id":"p25","day":"thu","s":950,"e":1000,"title":"Safeguarding the Mental Health of Community Managers & Moderators","who":"Sky Tunley-Stainton, Izzie Micul","comp":"Safe In Our World","room":"Cage Stage","area":"cage","cat":"Talk","track":"","desc":"A conversation about supporting the wellbeing of moderators and community managers, highlighting the importance of mental health and support for the people who keep gaming communities running."},{"id":"p24","day":"thu","s":950,"e":990,"title":"10 Empty Slides with Rami Ismail","who":"Rami Ismail","comp":"Independent","room":"Relic Stage","area":"relic","cat":"Talk","track":"Game Design","desc":"Rami Ismail will spar with the audience about the most critical things to know in (independent) game development, the things you've always wondered about, and the things you didn't realize you should wonder about."},{"id":"p26","day":"thu","s":960,"e":1010,"title":"How Not To Publish In 2027","who":"Daniel Lyozov, Christopher Wulf, Meg Clarke, Rebecca Lautner, Astrid Refstrup","comp":"Oro Interactive, Fellow Traveler, CRITICAL REFLEX, Evil Landfall/Landfall Games, WINGS","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"A panel focused on publishing. More info TBA"},{"id":"p27","day":"thu","s":980,"e":1070,"title":"Can I Actually Ship This? Generative AI Assets, IP and Disclosure Rules for Game Developers","who":"Yannik Rothweiler, Moritz Mehner, Helena Kasper","comp":"SKW Schwarz","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Business","desc":"You're about to release a game. The concept art started as a prompt, an NPC chats freely with players, and your publisher wants a warranty on the code. Can you actually ship this? In this hands-on legal speedrun your team plays through four levels. Each level starts with a short legal briefing from us; then your team applies it to the asset list of a fictional indie game: AI concept art, a cloned voice, generated music, a chatting NPC and more. Level by level you work out who owns AI-generated assets and code, what voice cloning requires, how to fill in Steam's AI disclosure and what the EU AI Act adds on top. Finally you will draft an AI policy for your own studio. The final boss is a red-flag hunt. You leave with a checklist and a policy template. General information, no individual legal advice. Make sure to REGISTER via this form to secure a spot: https://app.guestoo.de/public/event/2cce3337-27fa-401b-8259-2476262a6d16?lang=en ‍"},{"id":"p28","day":"thu","s":1000,"e":1040,"title":"Handling conflict in creative teams","who":"Justyna Fryczak","comp":"Just Align","room":"Relic Stage","area":"relic","cat":"Talk","track":"Impact","desc":"Whether students or professionals, teamwork is one of the biggest challenges. Creative conflict is what drives discovery of best solution, yet we frequently err on the side of conflict avoidance, which in time can lead to resentment. On the other side is mishandled conflict which has gone too far and starts feeling personal, risking burnout. This talk is an insider perspective on conflict and how we all can become a bit better at normalising and handling creative conflicts, and not letting them get personal."},{"id":"p29","day":"thu","s":1010,"e":1060,"title":"Beyond Barriers: Women Shaping the French and German Games Industry","who":"Nina Faudeux, Teninke Camara, Ruth Lemmen, Astrid Beyer, Mascha Ermakova","comp":"Institut français Germany, Bee Bridges Interactive, Womenize!, Women in Games France, Independent","room":"Cage Stage","area":"cage","cat":"Talk","track":"Business","desc":"From entering the industry to founding and leading a studio, women in games face different challenges at different stages of their careers. What support is available to help them thrive, and what still needs to change? Bringing together representatives from Womenize!, Women in Games France, a French studio director and an emerging talent from the German games ecosystem, this panel will explore women's professional journeys, the support structures available in both countries, and the role of industry networks in creating lasting opportunities. Organised by Institut français Germany, this discussion will examine what each ecosystem can learn from the other, how cross-border collaboration can strengthen existing initiatives, and what studios, institutions and industry stakeholders can do to build a more inclusive and sustainable games industry."},{"id":"p31","day":"thu","s":1020,"e":1080,"title":"Community Clubhouse Mixer at Alte Münze Keller","who":"","comp":"","room":"Alte Münze Keller","area":"keller","cat":"Mixer","track":"","desc":""},{"id":"p30","day":"thu","s":1020,"e":1060,"title":"Coming in Without \"The Answer\": A Producer's Guide to Team Transitions","who":"Filip Cholewczyński","comp":"Independent (ex-Ubisoft, CD Projekt RED)","room":"Portal Stage","area":"portal","cat":"Talk","track":"Impact","desc":"An inside look at what successful onboarding looks like for producers and leads. Transitioning between teams is one of the most common (and most underestimated) challenges a producer can face. Most of us jump straight into work but knowing how to earn a team's trust early makes all the difference. This session follows a natural onboarding flow, based on my own experience moving between teams and companies. It starts with observation: how to read unwritten rules and existing dynamics without triggering resistance. Then comes alignment, where ownership and decision-making often clash. I'll share a real conflict between a producer (me) and a lead engineer I co-led a team with - what we tried, what failed, and what finally worked. Central to this is \"Fracture Planes\": a framework for defining decision-making boundaries so leaders don't step on each other's toes, while avoiding the trap of \"design by committee.\" The final part covers what effective contribution looks like once trust is established: finding low-risk, high-impact interventions, supporting teams without taking their visibility, and adapting your leadership style as complexity grows. Attendees leave with a concrete approach to their first months in a new team: when to listen, when to act, and how to go from outsider to trusted partner."},{"id":"p32","day":"thu","s":1050,"e":1090,"title":"When Segments Mislead: How Psychology-Based Game-Testing Can Prevent Costly Design Decisions","who":"Andreas Hueffer","comp":"I+E Research GmbH","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"Many teams still make early design decisions based on pre-segmentation: “This appeals to new players focusing on social gaming” “this is more for casual players,” “the returning audience wants more of this challenge,” or “core gamers will understand it instantly.” The problem is that these segmentation labels often create false confidence and lead to costly misjudgments in tutorial design, pacing, UI complexity, and feature prioritization. Once that happens, game-tests stop being a tool for discovery and become a way to project prefabricated assumptions, protect hierarchy, and create artificial momentum.This talk shows how qualitative, psychologically informed game-testing helps teams move beyond assumptions and read e. g. the emotional reality of player experience. Starting with short real-world case examples, we will demonstrate how apparently solid audience assumptions can lead to wrong design decisions — and how emotional- and motivation focused analysis reveals the actual source of friction, uncertainty, or engagement before teams spend time and budget on the wrong solution."},{"id":"p33","day":"thu","s":1140,"e":1380,"title":"Networking at Alte Münze Galerie (Drinks & DJs)","who":"","comp":"","room":"Alte Münze Galerie","area":"galerie","cat":"Mixer","track":"","desc":""},{"id":"p34","day":"thu","s":1170,"e":1320,"title":"Invite-only Speaker/Partner Reception at The Social Hub powered by medianet","who":"","comp":"","room":"","area":"","cat":"Mixer","track":"","desc":""},{"id":"p37","day":"fri","s":600,"e":640,"title":"Finding Your Target Market: Data-Driven Validation and Successful Game Launch","who":"Danny Woo","comp":"G.ROUND","room":"Cage Stage","area":"cage","cat":"Talk","track":"Business","desc":"For game developers and publishers, \"success\" ultimately means launching a title that resonates perfectly with player preferences and sustaining its operation over time. However, achieving meaningful results in today’s market is an immense challenge, with the probability of success sitting at less than 3%. The most critical factor in a game's triumph is the immediate positive feedback and organic viral growth it generates upon release. Yet, one of the most persistent hurdles in the gaming industry is the inability to predict actual target market response prior to launch. In this session, I will present a methodology how to validate the readiness of games development, and share strategies on how to refine gameplay based on regional player preference data, identify optimal target markets, and maximize the chances of a successful global debut. The reality is stark: of the approximately 20,000 new titles released on Steam annually, 84% disappear from the market without even reaching 100 user reviews. Only a mere 6% of games achieve the benchmark of 500+ reviews, a threshold often seen as a sign of meaningful success. Through this presentation, I will reveal the core know-how for securing over 1,000 high-quality global user feedbacks to transform your game’s trajectory."},{"id":"p35","day":"fri","s":600,"e":650,"title":"How Games Connect Asian & European Audiences","who":"Ken Lai, Mikatsukitty (Mika)","comp":"SEGA Corporation, ACG Community Leader and Content Creator","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"What does it take for a game to connect with players across different cultures? From Japanese publishers reaching international audiences to Asian gaming communities thriving across Europe, the relationship between East and West is shaping how games are discovered, marketed, and experienced. Join Ken Lai from SEGA Japan and Mika, ACG Community Leader at ThxD GmbH and a content creator specialising in cosplay and streaming, for an open conversation about publishing, cultural differences, community building, and the growing influence of content creators. Together, they'll explore what makes games resonate across borders, how developers can approach new markets, and what indie studios can learn from the success of Asian gaming communities in Europe. ‍"},{"id":"p36","day":"fri","s":600,"e":640,"title":"Secret Languages in Games: How Symbols, Typography and UI Shape Worlds","who":"Fernando Forero","comp":"Blizzard","room":"Relic Stage","area":"relic","cat":"Talk","track":"Arts","desc":"Every memorable game world has its own visual language. Beyond functionality, symbols, typography, iconography, and UI can communicate history, culture, belief systems, and identity. This talk explores how graphic design and UI Art contribute to worldbuilding by creating visual systems that make fictional worlds feel authentic and alive. Through real production examples and personal work, attendees will discover how visual language can transform interfaces into powerful storytelling tools."},{"id":"p38","day":"fri","s":650,"e":690,"title":"Handpainted Texturing","who":"Theresa Schlag","comp":"Independent","room":"Cage Stage","area":"cage","cat":"Talk","track":"Arts","desc":"This talk explores how stylised and handpainted texturing can be used to create a strong visual identity in games. Using production examples and workflows, the session covers: >building consistent visual styles through references and art direction > creating efficient texturing workflows in Substance Painter and Designer > using custom generators instead of overly flexible smart materials The talk also examines the role of AI in modern art pipelines, arguing that tools alone do not produce strong visuals — consistency, context, and intentional artistic decisions do.Focused on practical workflows and real-world production constraints, this session is aimed at artists and developers who want to create more distinctive and cohesive stylised worlds."},{"id":"p39","day":"fri","s":650,"e":690,"title":"How to Get Your Game Funded by Medienboard Berlin-Brandenburg","who":"Amanda Förtsch, Joscha Neumann","comp":"Medienboard Berlin-Bandenburg, Medienboard Berlin-Brandenburg","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"Developing your own game presents developers with massive financial challenges. This is where Medienboard Berlin-Brandenburg supports newly founded start-ups as well as established studios. Joscha and Amanda will explain what steps you need to take and what requirements you have to fulfill to secure funding for your project."},{"id":"p41","day":"fri","s":660,"e":780,"title":"LUNA Framework - Introduction to rapid prototyping","who":"Thomas Bremer","comp":"DE:HIVE HTW Berlin","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Game Design","desc":"How does a game idea actually come about, and how do you quickly turn it into a playable prototype? During this session, you can try it out for yourself: in small groups, you draw cards from the LUNA card deck. They offer prompts on the rules, perception and meaning of every element of a game system. Using them, you develop the core of a shared game idea together. No prior knowledge needed, just a willingness to experiment. Drop by, experience LUNA for yourself, and walk away with an idea for your next game, all within 2 hours."},{"id":"p40","day":"fri","s":660,"e":700,"title":"Death to Progress Bars - How to improve Unity Iteration Times","who":"Arnaud Briche","comp":"Unity Technologies","room":"Portal Stage","area":"portal","cat":"Talk","track":"Game Design","desc":"Stop waiting for progress bars and reclaim your development flow. This presentation provides actionable strategies to minimize iteration time in Unity, helping teams reduce context switching and boost daily productivity. Key takeaways include: * Mastering the Inner Loop: Optimizing assembly definitions, domain reloading, and scene loading to achieve sub-three-second feedback. * Streamlining Asset Pipelines: Leveraging parallel imports and shared caches to eliminate unnecessary re-importing. * Solving Graphics Bottlenecks: Practical techniques for shader stripping and managing variant explosions. * Advanced Tooling and Profiling: Utilizing Editor profiling and project auditing to identify and resolve hidden performance bottlenecks. ‍"},{"id":"p43","day":"fri","s":700,"e":740,"title":"Drop Your Weapon: Designing an Engaging Nonviolent Action-Adventure Game","who":"Anton Licht","comp":"Sudden Forest","room":"Cage Stage","area":"cage","cat":"Talk","track":"Game Design","desc":"Action-adventure has been a top genre for decades, yet its biggest titles are built around combat. Even games that soften combat aesthetically, dressing it as play instead of war, still rest on the same fantasy. And no genre puts players as closely into the protagonist's perspective. So the obvious question: how can we replace combat and still keep players engaged? This session addresses that question through our work on \"Summer on Tidewind\", a non-violent action-adventure focused on wonder, discovery, and connection.Using the transformation aspect of the hero's journey as a framework, I look at three layers: what happens in the story, how the game evolves mechanically, and what shifts in the player's mind. Combat does heavy lifting across all three. It creates visible conflict, introduces mechanics that unlock over time, raises stakes, and gives players something to master. Remove it and you risk slow pacing, unclear stakes, and players who stop progressing. Instead of a direct replacement, I use the transformation lens to find other drivers of change: narrative and puzzle mechanics, environmental challenges, relationship-building, and mentally mapping the world. Drawing on reader-response theory, MDA, and skill atoms, we design for transformation across all three layers.The goal is not to argue against combat, but to understand what it actually does, and to encourage designers and publishers to build action-adventures that reach audiences beyond violent conflict."},{"id":"p42","day":"fri","s":700,"e":740,"title":"Creature Design in Concept Art: Logic and Storytelling","who":"Jane Katsubo","comp":"Larian Studios","room":"Relic Stage","area":"relic","cat":"Talk","track":"Arts","desc":"A talk about creature design for the entertainment industry. I'd like to share with you how concept artists think when they create creatures for imaginary settings, and what line of thought we can use to make our designs believable and memorable."},{"id":"p44","day":"fri","s":710,"e":760,"title":"From Player Guidance to People Guidance - Leading Creatives in AAA","who":"Miles Tost, Blake Rebouche","comp":"CD PROJEKT RED, Guerrilla Games","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"In this fireside chat, two veteran (level) designers will pick each other's brain on the everyday challenges of leading a team of creatives in AAA game development. This chat is for anyone who is already a lead in game development, aspires to be one, or is simply interested in what leadership in AAA may look like. ‍"},{"id":"p46","day":"fri","s":740,"e":800,"title":"LUNCH BREAK","who":"","comp":"","room":"Cage Stage","area":"cage","cat":"Talk","track":"","desc":""},{"id":"p45","day":"fri","s":740,"e":800,"title":"LUNCH BREAK","who":"","comp":"","room":"Relic Stage","area":"relic","cat":"Talk","track":"","desc":""},{"id":"p47","day":"fri","s":770,"e":820,"title":"Navigating the European Games Job Market — Data, Insights and Perspectives for Job Seekers","who":"Ruth Lemmen, Achim Quinke, Natalia Santorek, Valeria Rossi","comp":"Womenize!, Quinke Networks, 8Bit, Remedy Entertainment","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"What does the data tell us about the current state of the European games job market? With layoffs, studio closures, and fewer job opportunities affecting the industry, understanding the numbers behind these developments is an essential starting point for anyone looking for their next role. How is the situation evolving across different European markets, where are opportunities emerging, and what do the trends mean for job seekers?Bringing together perspectives from industry analysis, specialist recruitment, in-house talent acquisition and career coaching, this panel will explore the job market across Germany, Eastern Europe, and Scandinavia. Drawing on market data and first-hand experience, our speakers will discuss how hiring is changing, what employers are looking for, and how professionals can position themselves in an increasingly competitive environment. The discussion aims to turn data into practical insights, helping job seekers better understand the market, make informed career decisions, and identify potential paths forward in the European games industry. ‍"},{"id":"p48","day":"fri","s":790,"e":850,"title":"Getting Unstuck in Game Design & Production","who":"Mona Brandt","comp":"Independent","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Game Design","desc":"(Final Description TBA) Participants bring a concrete problem or decision they’re currently stuck on in their own project, and we use a simple framework to figure out why they’re stuck — whether the underlying issue is direction, constraints, decision-making, or ownership — and turn that into concrete next steps. ‍"},{"id":"p50","day":"fri","s":800,"e":840,"title":"Gen AI can f**k itself – why LLM’s make design teams dumber and less capable","who":"Mazen Sukkar","comp":"Independent","room":"Cage Stage","area":"cage","cat":"Talk","track":"Game Design","desc":"A quick run through gen AI and why it’s terrible within game design and a terrible ‘skill’ for a team to acquire, what skills are actually lost then looking at why players are also so averse to it."},{"id":"p49","day":"fri","s":800,"e":840,"title":"Click, Wishlist, Buy: Visual Marketing for Steam Store Pages","who":"Jaqueline Martin","comp":"Gentleland","room":"Relic Stage","area":"relic","cat":"Talk","track":"Arts","desc":"A practical talk about how visuals shape the first impression of your game on Steam. We’ll look at how capsule art, screenshots, trailers, and store page presentation can create clarity, trust, and desire before players ever press play.kana Talk - More Info TBA"},{"id":"p51","day":"fri","s":820,"e":880,"title":"LUNCH BREAK","who":"","comp":"","room":"Portal Stage","area":"portal","cat":"Talk","track":"","desc":""},{"id":"p53","day":"fri","s":850,"e":900,"title":"From Screen to Play: Building IP Ecosystems Across Film and Games","who":"Mariam Sheady, Frédéric Schuld","comp":"Spoondrift Games, Fabian&Fred","room":"Cage Stage","area":"cage","cat":"Talk","track":"Business","desc":"What does it take to turn a story into a lasting ecosystem? As the boundaries between film and games continue to blur, intellectual property is evolving beyond individual works into interconnected ecosystems. New forms of collaboration are emerging, but so are new challenges for creators. In this conversation, Mariam and Fred will explore the dynamic relationship between film and games, discuss the challenges and opportunities facing creators in an increasingly interconnected media landscape, and examine how strong communities can transform stories into lasting ecosystems. ‍"},{"id":"p52","day":"fri","s":850,"e":900,"title":"Roadmap 101: From Battleplan to Alignment","who":"Maria Maunula","comp":"Supercell","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"Plans fall apart. Roadmaps keep teams together. Learn why, how and what it means to build one in this interactive session with a senior producer who has seen it all, from tiny teams to games played by millions. Bring your phone, your curiosity, and walk away with tools and tips you can put to work immediately! ‍"},{"id":"p54","day":"fri","s":860,"e":920,"title":"The Very Secret Society of Inclusion - How mentorship can rebuild inclusion from the ground up","who":"Natali Rein, Annick Vins","comp":"TVSSoWiG (The Very Secret Society of Women in Games)","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Impact","desc":"A sticker. A whisper. A secret society. Inclusion doesn't always require sweeping reforms. Sometimes it starts with the smallest act of outreach, and how those quietly reshape who gets to make games is what this session is about. As one example, we'll share the idea behind The Very Secret Society of Women in Games, a playful, grassroots mentoring initiative that started as little more than an invitation, and proof that you don't need a platform or a budget to begin, just the nerve to reach one person. This isn't a case study with metrics or KPIs. It's a thought experiment made real, and an invitation to look at our own reach: the people we could welcome in before they ever think of the industry as a place for them. Together we'll trace the moments that almost kept us out and turn them outward, so you leave having named one real person you could reach, knowing exactly what you'd say, and quietly inducted as a member. This workshop is for anyone who's ever felt overwhelmed by the scale of change, a gentle reminder that small, intentional ideas can plant seeds that grow into movements. You don't need a big platform to start. You just need the courage to begin."},{"id":"p55","day":"fri","s":880,"e":920,"title":"The Craft of Environment Art in No Rest for the Wicked","who":"Matteo Bassini","comp":"Moon Studios","room":"Portal Stage","area":"portal","cat":"Talk","track":"Arts","desc":"This talk explores the environment art production pipeline behind No Rest for the Wicked, focusing on how MOON Studios’ distinctive artistic style shapes the creation of the game world. From translating concept art into 3D environments to developing the studio’s signature hand-painted look on 3D models, the presentation examines the artistic and technical decisions involved in bringing the world to life. Particular attention will be given to the use of hand-painted textures to define materials, create depth, and establish visual cohesion across environments and assets. The talk will also explore the importance of artistic direction throughout production, highlighting how a strong and consistent visual identity guides the creation of immersive environments and contributes to the distinctive atmosphere of No Rest for the Wicked."},{"id":"p57","day":"fri","s":910,"e":950,"title":"Dynamic Chain System: Modular Adaptive Music in FMOD","who":"Stepan Sobanov","comp":"Inquill Audio","room":"Cage Stage","area":"cage","cat":"Talk","track":"Audio","desc":"The Dynamic Chain System is a modular approach to adaptive game music built around short, self-contained chunks that connect based on game state, energy level, or narrative context. Instead of a fixed sequence, the game navigates a graph of musical possibilities in real time. This talk walks through the full system: how chunks are authored in the DAW, structured in FMOD using nested events and parameter sheets, and controlled from the game engine. Transitions, energy states, and layering without exponential complexity. Case studies from shipped indie projects cover where the system saves time and where it demands upfront design investment. Common failure modes are addressed throughout. You'll leave with: A reusable architecture for modular adaptive music in FMOD A compositional workflow for writing in chunks rather than loops Practical decision trees for when this approach fits, and when it does not For game composers, audio directors, and FMOD users ready to move past traditional adaptive loops."},{"id":"p56","day":"fri","s":910,"e":960,"title":"Modern AI, Legacy Pipelines: Practical Agentic Workflows for Game Development","who":"Peko Lin, Thomas Poulet, Simon-Pierre Therriault","comp":"Snowprint Studios, Something Mighty, Electronic Arts","room":"Relic Stage","area":"relic","cat":"Talk","track":"Tech","desc":"Agentic AI is rapidly becoming part of game development, but adopting new technology is rarely about starting from scratch. Most teams are balancing new AI capabilities with established tools, legacy systems, production pipelines, and the realities of shipping games. In this fireside chat, senior professionals from software and graphics engineering share their perspectives on how AI is changing day-to-day development across disciplines. We'll discuss where agentic workflows fit into existing pipelines, the trade-offs between automation and maintainability, how teams can adopt AI without disrupting proven processes, and where human expertise continues to make the biggest difference. Rather than offering one-size-fits-all answers, this conversation focuses on practical experiences, lessons learned, and the challenges of thoughtfully introducing AI into modern game development."},{"id":"p60","day":"fri","s":930,"e":990,"title":"Cross-IP Happy Hour at Alte Münze Galerie, powered by Kickstarter & Epic Games","who":"","comp":"","room":"Alte Münze Galerie","area":"galerie","cat":"Mixer","track":"","desc":""},{"id":"p59","day":"fri","s":930,"e":1050,"title":"Impactful Games Infrastructures for Sustainability - Spielfabrique","who":"Emma Dauphin","comp":"Spielfabrique","room":"Intraprenör","area":"intra","cat":"Workshop","track":"Business","desc":"This workshop brings together game developers, designers, and social impact practitioners to identify critical tools and infrastructure needed to build commercially viable games addressing sustainability and social challenges. In hands-on Problem-to-Impact exercises, participants develop an impact investor pitch deck for a game concept - and through that engage with the infrastructures and tools needed for bringing these concepts to market. Register to save a spot via this form: https://forms.gle/j5pHwdHrKZu4NFXY9"},{"id":"p58","day":"fri","s":930,"e":980,"title":"What even is a publisher and do you need one?","who":"Charly Harbord, Reese Wright, Pim Holfve, Charlotte Cook","comp":"Brass Knuckle Development, Devolver Digital, Raw Fury, Midwest Games","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"Publishing can sometimes feel like a mysterious black box. What does a publisher really do? What are you paying them for? What should you expect in return? And when does it make more sense to go it alone? In this informal, fireside-style chat, publishing professionals and self-publishers will swap stories, opinions and hard-won lessons about the realities of getting games out into the world. We’ll cut through the jargon and explore what publishers actually bring to the table, from funding and marketing to platforms, partnerships, and simply helping you get the thing finished. Expect honest takes, questionable war stories and plenty of “well, actually…” moments. No sales pitch, no secret handshake required; just a friendly conversation about the different paths to publishing, the trade-offs involved, and how to figure out what’s right for your game. Come with your questions, leave with a better idea of what a publisher can (and can’t) do for you, and whether you need one at all."},{"id":"p61","day":"fri","s":960,"e":1000,"title":"Boosters and Blockers, Bridging Gap between code and business","who":"Ahmed Sallam","comp":"King | XBox","room":"Cage Stage","area":"cage","cat":"Talk","track":"Business","desc":"In this session we explore how we could close the gap between engineering craft and other game development crafts, how could engineers support each craft delivering its part to ultimately create coherency between the teams."},{"id":"p62","day":"fri","s":970,"e":1010,"title":"Insert Coin","who":"Ali Farha","comp":"Behold Ventures","room":"Relic Stage","area":"relic","cat":"Talk","track":"Business","desc":"There's no single right way to fund a game, but there are many wrong fits. This session unpacks the key financing options for game founders today, what each asks of you, and why the smartest studios build hybrid stacks rather than bet on one source of capital."},{"id":"p63","day":"fri","s":990,"e":1040,"title":"Community Building Fireside - Carolin Wendt (CD PROJEKT RED) & Mélida Chiarotto-Schenk (GameDuell)","who":"Mélida Chiarotto, Carolin Wendt","comp":"GameDuell, CD PROJEKT RED","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"More info TBA Community Building Fireside - Carolin Wendt (CD PROJEKT RED) & Mélida Chiarotto-Schenk (GameDuell)"},{"id":"p64","day":"fri","s":1010,"e":1050,"title":"100,000 Wishlists with TikTok & Instagram. What worked for me (and can work for you)","who":"Adrien Laurent","comp":"Independent","room":"Cage Stage","area":"cage","cat":"Talk","track":"Business","desc":"As Steam becomes increasingly crowded and Steam Fests alone are no longer a reliable way to gain traction, platforms like TikTok and Instagram have become more important than ever for growing your wishlists and building a community around your game. While creating content for these platforms can feel intimidating at first, ignoring them is a missed opportunity. In this talk, I'll share the lessons I learned from earning over 100,000 wishlists across two games. I'll cover what worked for me, what I've observed working for other developers, and debunk some of the common myths about using short-form content to market your game."},{"id":"p65","day":"fri","s":1020,"e":1060,"title":"5 war stories from working in Game Audio. How you survive hell and make sure you don't have go through it!","who":"Markus Zierhofer","comp":"Audio Creatures","room":"Relic Stage","area":"relic","cat":"Talk","track":"Arts","desc":"Markus Zierhofer from AudioCreatures will share personal “stories from hell”, highlighting what went wrong in projects and how to avoid similar pitfalls when working with or as an Audio Designer or Composer in the game production pipeline. Drawing on experience from over 100 productions over the last years, ranging from Indie to AAA teams, Markus will share stories based on real events and guide you through the stages of „the burn“ in an educational but entertaining way!The talk is open to everyone and all departments!"},{"id":"p66","day":"fri","s":1050,"e":1170,"title":"Publisher x Content Creator Mixer (Invite-only)","who":"","comp":"","room":"","area":"","cat":"Mixer","track":"","desc":""},{"id":"p67","day":"fri","s":1060,"e":1160,"title":"The Rabbit Residency Pitch Competition","who":"Julianne Becker","comp":"Coconat - The Rabbit","room":"Portal Stage","area":"portal","cat":"Talk","track":"Business","desc":"The Rabbit Games Residency is a fully funded four-week residency program for indie game developers from around the world. Hosted at COCONAT, a workation space in Brandenburg, Germany, it gives selected developers the time, space, and support they need to further develop their games and prepare them for the next stage of their careers. Join us on Nov 6th at 17:40 at the Portal Stage for this edition's Pitch Event, where each team will present their games in 4 minutes, and will receive invaluable feedback by our amazing jury: Rami Ismail, Claire Barilla and Ralf Wirsing. This years' participants of The Rabbit Indie Games' Residency are: Findling Games with 'Waterful' Hellfire Railway Interactive with 'Mutasmagoria' Juno Menager with '4Mecheros' Tinker with 'Burnout Simulator' Superpose Press with 'Hot Pink Detective' Googy Studios with 'You Don't Belong Here' Flaco with 'Lunar Hunter'"},{"id":"p68","day":"fri","s":1170,"e":1439,"title":"Official B2B Closing Party at Alte Münze powered by ByteRockers' Games, SKW Schwarz and Audiokinetic","who":"","comp":"","room":"Cage Stage","area":"cage","cat":"Mixer","track":"","desc":""}]</script>
+<script>
+"use strict";
+/* ============ small helpers ============ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rich = s => esc(s).replace(/https?:\/\/[^\s<)]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+const hhmm = m => m == null ? "" : String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const hash = s => { let h = 5381; for (const c of String(s)) h = (h * 33 + c.codePointAt(0)) >>> 0; return "q" + h.toString(36); };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
+};
+const DATE = { thu: "2026-11-05", fri: "2026-11-06" };
+const DAY0 = Date.UTC(2026, 10, 5);
+const AREAS = [
+  ["portal", "Portal Stage"], ["relic", "Relic Stage"], ["cage", "Cage Stage"], ["intra", "Intraprenör"],
+  ["mtm", "Meet To Match Area"], ["mentor", "Mentor Ground"], ["reg", "Registration"],
+  ["keller", "Keller"], ["galerie", "Galerie"], ["", "Other places"]
+];
+const ST = {
+  confirmed: ["Confirmed", "confirmed"], booked: ["Booked", "booked"], pending: ["Waiting", "pending"],
+  planned: ["Plan", ""], "to cancel": ["To cancel", "cancel"], proposed: ["Idea · not booked", "idea"], pick: ["My pick", ""]
+};
+const PROGRAMME = (() => { try { return JSON.parse($("programme").textContent); } catch { return []; } })();
+
+/* ============ state ============ */
+let pack = window.GG_PACK || store.get("gg.pack", null);
+let notes = store.get("gg.notes", {});
+let dayState = store.get("gg.state", { added: [], skipped: [], t: 0 });
+let plan = store.get("gg.plan", null);
+let mine = store.get("gg.mine", { stops: {}, t: 0 });   // what you added or changed yourself, kept apart from the plan
+const dirty = new Set(store.get("gg.dirty", []));
+const ui = { day: null, tab: store.get("gg.tab", "next"), sel: null, manualAt: 0, progOpen: false, progQ: "", sheet: null };
+let db = null, col = null, sample = null, syncState = "local", serverSeen = false, pendingRender = false;
+
+/* time: ?now=thu-1155 lets you test any moment */
+function berlinNow() {
+  const q = new URLSearchParams(location.search).get("now");
+  if (q && /^(thu|fri)-\d{4}$/.test(q)) return { date: DATE[q.slice(0, 3)], m: +q.slice(4, 6) * 60 + +q.slice(6, 8) };
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map(x => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, m: +p.hour * 60 + +p.minute };
+}
+function absNow() { const n = berlinNow(); const [y, mo, d] = n.date.split("-").map(Number); return (Date.UTC(y, mo - 1, d) - DAY0) / 60000 + n.m; }
+const absAt = (day, m) => (day === "fri" ? 1440 : 0) + m;
+const todayKey = () => { const n = berlinNow(); return n.date === DATE.thu ? "thu" : n.date === DATE.fri ? "fri" : null; };
+
+/* ============ the list of stops ============ */
+let stopsCache = null;
+const fresh = () => { stopsCache = null; };
+const qKey = t => String(t).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+function mergeQs(base, extra) {
+  const out = (base || []).map(q => ({ ...q }));
+  for (const q of extra || []) {
+    const hit = out.find(o => qKey(o.t) === qKey(q.t));
+    if (hit) { if (q.h) hit.h = q.h; } else out.push({ ...q });
+  }
+  return out;
+}
+function overlay(base) {
+  const m = mine.stops[base.id];
+  if (!m) return base;
+  const { qs, qsMode, ...fields } = m;
+  return { ...base, ...fields, qs: qsMode === "replace" ? (qs || []) : mergeQs(base.qs, qs) };
+}
+function allStops() {
+  if (stopsCache) return stopsCache;
+  const out = (pack && pack.stops ? pack.stops : []).map(overlay);
+  const linked = new Set(out.filter(s => s.prog).map(s => s.prog));
+  for (const id of dayState.added) {
+    if (!id.startsWith("p:")) continue;
+    const pid = id.slice(2);
+    if (linked.has(pid)) continue;
+    const p = PROGRAMME.find(x => x.id === pid);
+    if (p) out.push(overlay(progToStop(p)));
+  }
+  for (const id of Object.keys(mine.stops)) if (id.startsWith("m:")) out.push(overlay({ id, kind: "meeting", status: "planned", area: "", room: "Place not set", title: "" }));
+  return stopsCache = out;
+}
+function progToStop(p) {
+  return { id: "p:" + p.id, short: (p.who || p.title).split(",")[0].slice(0, 18), day: p.day, s: p.s, e: p.e, kind: "talk", title: p.title, who: [p.who, p.comp].filter(Boolean).join(" · "), room: p.room || "Place not listed", area: p.area, status: "pick", prog: p.id, desc: p.desc };
+}
+const isAdded = s => dayState.added.includes(s.id);
+const isSkipped = s => dayState.skipped.includes(s.id);
+const isActive = s => !s.hall && !isSkipped(s) && (!s.idea || isAdded(s));
+const stopsOn = day => allStops().filter(s => s.day === day && isActive(s)).sort((a, b) => a.s - b.s || a.e - b.e);
+const byId = id => allStops().find(s => s.id === id);
+const hallStops = () => allStops().filter(s => s.hall);
+
+function clashes(s, list) { return list.filter(o => o.id !== s.id && o.s < s.e && s.s < o.e); }
+function nextOf(s, list) { const i = list.findIndex(o => o.id === s.id); return i < 0 ? null : list.slice(i + 1).find(o => o.s >= s.e) || null; }
+function gapNote(a, b) {
+  if (!a || !b) return null;
+  const g = b.s - a.e;
+  if (g < 0 || g >= 10 || a.area === b.area) return null;
+  return { g, text: g === 0 ? `No gap before ${b.short || b.title}. Walk time unknown.` : `Only ${g} min to ${b.short || b.title}. Walk time unknown.` };
+}
+function currentStop(day) {
+  const list = stopsOn(day).filter(s => s.status !== "to cancel");
+  if (!list.length) return stopsOn(day)[0] || null;
+  const now = absNow();
+  const live = list.filter(s => absAt(day, s.s) <= now && now < absAt(day, s.e));
+  if (live.length) {
+    return live.slice().sort((a, b) => {
+      const w = x => x.kind === "talk" || x.kind === "social" ? 0 : 1;   // a meeting beats a talk running at the same time
+      return w(b) - w(a) || b.s - a.s;
+    })[0];
+  }
+  return list.find(s => absAt(day, s.s) > now) || list[list.length - 1];
+}
+function followNow() {
+  const today = todayKey();
+  ui.day = today || (absNow() > absAt("fri", 1439) ? "fri" : "thu");
+  const c = currentStop(ui.day);
+  ui.sel = c ? c.id : null;
+}
+const selected = () => { const s = ui.sel && byId(ui.sel); return s || null; };
+
+function countdown(s) {
+  if (s.hall) return { t: "ANY TIME", done: false };
+  const now = absNow(), a = absAt(s.day, s.s), b = absAt(s.day, s.e);
+  if (now >= b) return { t: "DONE", done: true };
+  if (now >= a) { const l = b - now; return { t: `NOW · ${l} MIN LEFT`, done: false }; }
+  const d = a - now;
+  if (d < 120) return { t: `IN ${d} MIN`, done: false };
+  if (d < 1440) return { t: `IN ${Math.round(d / 60)} H`, done: false };
+  return { t: `${s.day === "thu" ? "THU" : "FRI"} ${hhmm(s.s)}`, done: false };
+}
+
+/* ============ notes: this device first, then Claude ============ */
+function noteOf(id) { return notes[id] || { text: "", answers: {}, t: 0 }; }
+function changeNote(id, fn) {
+  const n = noteOf(id); n.answers = n.answers || {}; fn(n); n.t = Date.now(); notes[id] = n;
+  store.set("gg.notes", notes); markDirty("n_" + id);
+}
+function markDirty(key) { dirty.add(key); store.set("gg.dirty", [...dirty]); scheduleFlush(); }
+let flushTimer = null, flushing = false;
+function scheduleFlush(ms = 800) { paintSync(); if (!db || !col) return; clearTimeout(flushTimer); flushTimer = setTimeout(flush, ms); }
+function docBody(key) {
+  if (key === "state") return dayState;
+  if (key === "mine") return mine;
+  if (key === "plan_photo") return plan || { data: "", t: Date.now() };
+  return notes[key.slice(2)] || null;
+}
+async function flush() {
+  if (!db || !col || flushing || !dirty.size) { paintSync(); return; }
+  flushing = true; syncState = "busy"; paintSync();
+  let failed = false;
+  for (const key of [...dirty]) {
+    const body = docBody(key);
+    if (!body) { dirty.delete(key); continue; }
+    const sent = JSON.stringify(body);
+    try {
+      await col.doc(key).set(JSON.parse(sent));
+      if (JSON.stringify(docBody(key)) === sent) dirty.delete(key);
+    } catch { failed = true; break; }
+  }
+  store.set("gg.dirty", [...dirty]);
+  flushing = false;
+  syncState = failed ? "off" : dirty.size ? "busy" : "ok";
+  paintSync();
+  if (failed) { clearTimeout(flushTimer); flushTimer = setTimeout(flush, 15000); }
+  else if (dirty.size) scheduleFlush();
+}
+window.addEventListener("online", () => scheduleFlush(100));
+
+async function connect() {
+  if (!window.claude || !window.claude.use) { paintSync(); return; }
+  let user = null;
+  try { [db, user, sample] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("sample")]); } catch { db = null; }
+  if (sample) paint();
+  if (!db || !user) { db = null; paintSync(); return; }
+  let id;
+  try { id = await user.id(); } catch { id = null; }
+  if (!id) { db = null; paintSync(); return; }
+  col = db.collection("data/users/" + id);
+  syncState = "busy"; paintSync();
+  const timer = setTimeout(() => { if (!serverSeen) { syncState = "off"; paintSync(); } }, 10000);
+  col.onSnapshot(snap => {
+    if (!snap.metadata.fromCache) { serverSeen = true; clearTimeout(timer); if (!dirty.size && !flushing) syncState = "ok"; }
+    adopt(snap);
+    if (dirty.size) scheduleFlush(200);
+    paintSync();
+  }, () => { clearTimeout(timer); syncState = "off"; paintSync(); });
+}
+function adopt(snap) {
+  let changed = false, nextStops = [], meta = null;
+  for (const d of snap.docs) {
+    const k = d.id, v = d.data(); if (!v) continue;
+    if (k.startsWith("s_")) nextStops.push(v);
+    else if (k === "meta") meta = v;
+    else if (k.startsWith("n_")) {
+      const id = k.slice(2), mine = notes[id];
+      if (!dirty.has(k) && (!mine || (v.t || 0) > (mine.t || 0))) { notes[id] = v; changed = true; }
+      else if (mine && (mine.t || 0) > (v.t || 0) && !dirty.has(k)) dirty.add(k);
+    } else if (k === "state") {
+      if (!dirty.has(k) && (v.t || 0) > (dayState.t || 0)) { dayState = { added: v.added || [], skipped: v.skipped || [], t: v.t }; store.set("gg.state", dayState); changed = true; }
+    } else if (k === "mine") {
+      if (!dirty.has(k) && (v.t || 0) > (mine.t || 0)) { mine = { stops: v.stops || {}, t: v.t }; store.set("gg.mine", mine); changed = true; }
+    } else if (k === "plan_photo") {
+      if (!dirty.has(k) && (v.t || 0) > ((plan && plan.t) || 0)) { plan = v.data ? v : null; store.set("gg.plan", plan); changed = true; }
+    }
+  }
+  if (nextStops.length) {
+    const nextPack = { meta: meta || {}, stops: nextStops };
+    if (JSON.stringify(nextPack) !== JSON.stringify(pack)) { pack = nextPack; store.set("gg.pack", pack); changed = true; }
+  }
+  store.set("gg.notes", notes);
+  if (changed) { fresh(); softRender(); }
+}
+function setStateList(list, id, on) {
+  const s = new Set(dayState[list]); if (on) s.add(id); else s.delete(id);
+  dayState[list] = [...s]; dayState.t = Date.now(); fresh();
+  store.set("gg.state", dayState); markDirty("state");
+}
+
+/* ============ painting ============ */
+function paintSync() {
+  const el = $("syncline"); if (!el) return;
+  const txt = !window.claude || !db ? ["", "Saved on this device"] :
+    syncState === "ok" ? ["ok", "Saved. Claude can read these"] :
+    syncState === "busy" ? ["busy", "Saving…"] :
+    ["off", dirty.size ? "No connection. Saved on this phone, will sync later" : "Can't reach Claude. Showing your last saved plan"];
+  el.className = "sync " + txt[0]; el.innerHTML = `<i></i><span>${esc(txt[1])}</span>`;
+}
+function paintBar() {
+  const today = todayKey(), n = berlinNow();
+  for (const b of $("seg").children) b.setAttribute("aria-pressed", String(b.dataset.day === ui.day));
+  for (const b of $("tabs").children) b.setAttribute("aria-pressed", String(b.dataset.tab === ui.tab));
+  $("clock").textContent = hhmm(n.m) + (today ? "" : " Berlin");
+  const list = stopsOn(ui.day), sel = selected(), now = absNow();
+  $("strip").innerHTML = list.map(s => {
+    const past = now >= absAt(s.day, s.e);
+    const fixed = s.status === "confirmed" || s.status === "booked";
+    return `<button class="blk${past ? " past" : ""}${s.status === "to cancel" ? " cancel" : ""}" data-sel="${esc(s.id)}" aria-pressed="${sel && sel.id === s.id}">${fixed ? '<span class="gm"></span>' : ""}<span class="bt">${hhmm(s.s)}</span><span class="bl">${esc(s.short || s.title)}</span></button>`;
+  }).join("") || `<span class="subw" style="padding:10px 2px;font-size:14px">Nothing picked for this day yet.</span>`;
+  const on = $("strip").querySelector('[aria-pressed="true"]');
+  if (on) { const st = $("strip"); st.scrollLeft = on.offsetLeft - st.offsetLeft - (st.clientWidth - on.offsetWidth) / 2; }
+  paintDayline(list, sel);
+}
+let span = { a: 600, b: 1200 };
+function paintDayline(list, sel) {
+  const starts = list.map(s => s.s);
+  span.a = starts.length ? Math.floor(Math.min(...starts) / 60) * 60 : 600;
+  span.b = starts.length ? Math.max(Math.max(...starts) + 30, span.a + 60) : 1200;
+  const pc = m => (Math.max(0, Math.min(1, (m - span.a) / (span.b - span.a))) * 100).toFixed(2) + "%";
+  let h = "";
+  const today = todayKey();
+  const n = berlinNow();
+  if (today === ui.day) {
+    h += `<span class="dl-done" style="width:${pc(n.m)}"></span>`;
+    if (n.m >= span.a && n.m <= span.b) h += `<span class="dl-now" style="left:${pc(n.m)}"></span>`;
+  } else if ((ui.day === "thu" && absNow() > absAt("thu", 1439))) {
+    h += `<span class="dl-done" style="width:100%"></span>`;
+  }
+  for (const s of list) {
+    const pk = s.status === "confirmed" || s.status === "booked";
+    h += `<span class="dl-n${pk ? " pk" : ""}${sel && sel.id === s.id ? " on" : ""}" style="left:${pc(s.s)}"></span>`;
+  }
+  $("dl-in").innerHTML = h;
+  let hr = "";
+  const step = span.b - span.a > 480 ? 120 : 60;
+  for (let m = Math.ceil(span.a / 60) * 60; m < span.b - 20; m += step) hr += `<span style="left:${pc(m)}">${String(m / 60 % 24).padStart(2, "0")}</span>`;
+  $("hours").innerHTML = hr;
+  const d = $("dayline");
+  d.setAttribute("aria-valuetext", sel ? `${hhmm(sel.s)} ${sel.short || sel.title}` : "");
+}
+function pills(s) {
+  const st = ST[s.status] || ["", ""];
+  return st[0] ? `<span class="pill ${st[1]}">${esc(st[0])}</span>` : "";
+}
+function warnings(s, list) {
+  let h = "";
+  if (s.note) h += `<div class="flag soft">${esc(s.note)}</div>`;
+  if (s.status === "pending") h += `<div class="flag soft">Not accepted yet. Check Meet To Match before you walk there.</div>`;
+  if (s.status === "to cancel") h += `<div class="flag">You meant to cancel this slot. It still holds a place in Meet To Match until you do.</div>`;
+  if (s.idea && !isAdded(s)) h += `<div class="flag soft">An idea, not booked. Nothing happens unless you add it${s.kind === "mentor" ? " and book it in Meet To Match" : ""}.</div>`;
+  if (!s.hall && isActive(s)) {
+    const c = clashes(s, list);
+    if (c.length) h += `<div class="flag"><b>Clash:</b> ${c.map(o => `${esc(o.short || o.title)} (${hhmm(o.s)}–${hhmm(o.e)})`).join(", ")}.</div>`;
+  }
+  return h;
+}
+function questionsHtml(s) {
+  const n = noteOf(s.id), ans = n.answers || {};
+  return (s.qs || []).map(q => {
+    const k = hash(q.t), a = ans[k] || {}, open = a.done || a.a || ui["open_" + s.id + k];
+    return `<div class="q${a.done ? " done" : ""}">
+      <button class="tick" data-tick="${esc(s.id)}|${k}" aria-pressed="${!!a.done}" aria-label="Mark as asked"><i></i></button>
+      <button class="qt" data-qopen="${esc(s.id)}|${k}">${esc(q.t)}</button>
+      ${q.h ? `<div class="h">${esc(q.h)}</div>` : ""}
+      ${open ? `<textarea class="a" rows="1" placeholder="What they said" data-ans="${esc(s.id)}|${k}" data-q="${esc(q.t)}">${esc(a.a || "")}</textarea>` : ""}
+    </div>`;
+  }).join("");
+}
+function renderNext() {
+  const s = selected();
+  if (!s) return `<p class="empty">Nothing here yet.<br><button class="btn primary" data-ai style="margin-top:12px">Fill it with your AI</button> <button class="btn" data-tab="day" style="margin-top:12px">Pick talks in Day</button></p>`;
+  const list = s.hall ? [] : stopsOn(s.day), c = countdown(s);
+  const nx = !s.hall && isActive(s) ? nextOf(s, list) : null, gn = gapNote(s, nx);
+  const n = noteOf(s.id);
+  const extra = s.extra || [];
+  let h = `<div class="count${c.done ? " done" : ""}" id="countEl">${esc(c.t)}</div>
+    <div class="where">${esc(s.room)}</div>
+    <div class="what">${esc(s.title)}</div>
+    ${s.who ? `<div class="subw">${esc(s.who)}</div>` : ""}
+    <div class="meta">${s.hall ? "" : `<span class="time">${s.day === "thu" ? "Thu" : "Fri"} ${hhmm(s.s)}–${hhmm(s.e)}</span>`} ${pills(s)}</div>
+    ${warnings(s, list)}`;
+  if (s.idea && s.reason) h += `<div class="lbl">Why this idea</div><div class="walk">${rich(s.reason)}</div>`;
+  if (s.idea && !isAdded(s)) h += `<div class="actions"><button class="btn primary" data-add="${esc(s.id)}">Add to my day</button></div>`;
+  if (s.say) h += `<div class="lbl">Say first</div><div class="say">${rich(s.say)}</div>`;
+  if (s.walk) h += `<div class="lbl">Walk out with</div><div class="walk">${rich(s.walk)}</div>`;
+  if (s.practical) h += `<div class="flag soft">${rich(s.practical)}</div>`;
+  if (s.qs && s.qs.length) h += `<div class="lbl">Ask, in this order</div>${s.qlead ? `<p class="subw" style="margin:0 0 8px">${esc(s.qlead)}</p>` : ""}<div class="qs">${questionsHtml(s)}</div>`;
+  if (s.listen && s.listen.length) h += `<div class="lbl">Listen for</div><ul class="ul">${s.listen.map(x => `<li>${rich(x)}</li>`).join("")}</ul>`;
+  if (s.dont) h += `<div class="lbl">Don't</div><div class="dont">${rich(s.dont)}</div>`;
+  if (s.desc) h += `<div class="lbl">About this session</div><div class="walk" style="font-size:15px">${rich(s.desc)}</div>`;
+  else if (s.prog) { const p = PROGRAMME.find(x => x.id === s.prog); if (p && p.desc) h += `<details class="more"><summary>About this session</summary><div class="in">${rich(p.desc)}</div></details>`; }
+  if (s.whoText) h += `<details class="more"><summary>Who this is</summary><div class="in">${rich(s.whoText)}</div></details>`;
+  if (s.verdict && !s.idea) h += `<details class="more"><summary>Why you're going</summary><div class="in">${rich(s.verdict)}</div></details>`;
+  if (extra.length) h += `<details class="more"><summary>More on this (${extra.length})</summary><div class="in">${extra.map(x => `<h4>${esc(x.h)}</h4>${rich(x.t)}`).join("\n")}</div></details>`;
+  h += `<div class="lbl">Quick note</div><textarea rows="2" placeholder="Write anything here" data-note="${esc(s.id)}">${esc(n.text || "")}</textarea>`;
+  if (nx) h += `<div class="lbl">Then</div>
+    ${gn ? `<div class="flag soft">${esc(gn.text)}</div>` : ""}
+    <button class="then" data-sel="${esc(nx.id)}"><span class="time">${hhmm(nx.s)}</span><span><b>${esc(nx.short || nx.title)}</b><small>${esc(nx.room)}</small></span><span aria-hidden="true">›</span></button>`;
+  if (!s.hall) h += `<div class="actions">${
+    isSkipped(s) ? `<button class="btn" data-unskip="${esc(s.id)}">Put back in my day</button>`
+    : s.idea ? (isAdded(s) ? `<button class="btn" data-remove="${esc(s.id)}">Remove from my day</button>` : "")
+    : s.id.startsWith("p:") ? `<button class="btn" data-remove="${esc(s.id)}">Remove from my day</button>`
+    : `<button class="btn" data-skip="${esc(s.id)}">Skip this</button>`}</div>`;
+  return h;
+}
+function rowHtml(s, list, sel) {
+  const on = sel && sel.id === s.id;
+  const past = !s.hall && absNow() >= absAt(s.day, s.e);
+  const cls = ["row", on && "on", past && "past", isSkipped(s) && "skip", s.status === "to cancel" && "cancel", s.idea && !isAdded(s) && "idea"].filter(Boolean).join(" ");
+  const c = !s.hall && isActive(s) ? clashes(s, list) : [];
+  let x = "";
+  if (on) {
+    const first = s.qs && s.qs[0];
+    x = `<div class="x">
+      ${s.idea && s.reason ? `<div>${rich(s.reason)}</div>` : ""}
+      ${s.walk ? `<div class="lbl">Walk out with</div><div>${rich(s.walk)}</div>` : ""}
+      ${first ? `<div class="lbl">First question</div><div>${esc(first.t)}</div>` : ""}
+      <div class="actions">
+        <button class="btn primary small" data-open="${esc(s.id)}">Open</button>
+        ${s.idea && !isAdded(s) ? `<button class="btn small" data-add="${esc(s.id)}">Add to my day</button>` : ""}
+        ${s.idea && isAdded(s) ? `<button class="btn small" data-remove="${esc(s.id)}">Remove</button>` : ""}
+        ${!s.idea && !s.hall ? (isSkipped(s) ? `<button class="btn small" data-unskip="${esc(s.id)}">Put back</button>` : s.id.startsWith("p:") ? `<button class="btn small" data-remove="${esc(s.id)}">Remove</button>` : `<button class="btn small" data-skip="${esc(s.id)}">Skip</button>`) : ""}
+      </div></div>`;
+  }
+  return `<article class="${cls}" id="row-${esc(s.id)}">
+    <button class="head" data-sel="${esc(s.id)}" aria-expanded="${!!on}">
+      <span class="t">${s.hall ? "Any" : hhmm(s.s)}${s.hall ? "" : `<small>${hhmm(s.e)}</small>`}</span>
+      <span><span class="tt">${esc(s.title)}</span><div class="rm">${esc(s.room)}</div>
+      <div class="p">${pills(s)}${isSkipped(s) ? '<span class="pill">Skipped</span>' : ""}${c.length ? `<span class="pill cancel">Clash: ${esc(c[0].short || c[0].title)}</span>` : ""}</div></span>
+    </button>${x}</article>`;
+}
+function renderDay() {
+  const sel = selected(), active = stopsOn(ui.day);
+  const all = allStops().filter(s => s.day === ui.day && !s.hall).sort((a, b) => a.s - b.s || a.e - b.e);
+  let h = "";
+  all.forEach(s => {
+    h += rowHtml(s, active, sel);
+    if (isActive(s)) {
+      const gn = gapNote(s, nextOf(s, active));
+      if (gn) h += `<div class="gapnote${gn.g === 0 ? " bad" : ""}">${esc(gn.text)}</div>`;
+    }
+  });
+  if (!all.length) h += `<p class="empty">Nothing picked for this day yet. Add talks from the programme below.</p>`;
+  const hall = hallStops();
+  if (hall.length) h += `<div class="section-h" id="hall-h">No set time</div>` + hall.map(s => rowHtml(s, [], sel)).join("");
+  h += `<details class="more" id="progbox"${ui.progOpen ? " open" : ""} style="margin-top:22px"><summary>Whole programme, ${ui.day === "thu" ? "Thursday" : "Friday"}</summary><div style="padding:0 12px 8px">
+    <input class="search" id="progq" type="search" placeholder="Search talks, people, rooms" value="${esc(ui.progQ)}">
+    <div id="proglist">${progList()}</div></div></details>`;
+  return h;
+}
+function progList() {
+  const q = ui.progQ.trim().toLowerCase();
+  const packLinked = new Map(allStops().filter(s => s.prog && !s.id.startsWith("p:")).map(s => [s.prog, s]));
+  const items = PROGRAMME.filter(p => p.day === ui.day && (!q || `${p.title} ${p.who} ${p.comp} ${p.room} ${p.track} ${p.cat} ${p.desc}`.toLowerCase().includes(q)));
+  return items.map(p => {
+    const linked = packLinked.get(p.id);
+    const inDay = linked ? isActive(linked) : dayState.added.includes("p:" + p.id);
+    const action = linked && linked.idea && !isAdded(linked) ? `<button class="btn small" data-add="${esc(linked.id)}">Add</button>`
+      : linked && !isActive(linked) ? `<button class="btn small" data-unskip="${esc(linked.id)}">Add</button>`
+      : linked ? `<span class="pill booked">In your day</span>`
+      : inDay ? `<button class="btn small" data-remove="p:${esc(p.id)}">Remove</button>`
+      : `<button class="btn small" data-add="p:${esc(p.id)}">Add</button>`;
+    return `<div class="prog"><button class="pt" data-about="${esc(p.id)}"><b>${esc(p.title)}</b><small>${hhmm(p.s)}–${hhmm(p.e)} · ${esc(p.room || "Place not listed")}${p.who ? " · " + esc(p.who) : ""}</small></button>${action}</div>`;
+  }).join("") || `<p class="subw">Nothing matches.</p>`;
+}
+function renderMap() {
+  const sel = selected(), list = stopsOn(ui.day);
+  const num = new Map(list.map((s, i) => [s.id, i + 1]));
+  let h = "";
+  if (plan && plan.data) {
+    h += `<button class="plan-photo" data-zoom aria-label="Zoom the floor plan"><img alt="Floor plan you added" src="${esc(plan.data)}"></button>
+      <div class="actions"><label class="btn small" style="display:inline-grid;place-items:center">Change photo<input type="file" accept="image/*" id="planfile" hidden></label><button class="btn small" data-planoff>Remove</button></div>`;
+  } else {
+    h += `<div class="flag soft"><b>Not a real map.</b> These are named places, not to scale. Add a photo of the floor plan and it shows here.</div>
+      <label class="btn primary" style="display:grid;place-items:center;margin-top:8px">Add a floor plan photo<input type="file" accept="image/*" id="planfile" hidden></label>`;
+  }
+  h += `<div class="tiles">`;
+  for (const [key, label] of AREAS) {
+    const here = list.filter(s => (s.area || "") === key);
+    if (key === "" && !here.length) continue;
+    const on = sel && !sel.hall && (sel.area || "") === key && isActive(sel);
+    h += `<button class="tile${on ? " on" : ""}${key === "" ? " wide" : ""}" data-area="${esc(key)}"><b>${esc(label)}</b><span class="dots">${here.map(s =>
+      `<span class="dot${sel && sel.id === s.id ? " on" : ""}${s.status === "confirmed" || s.status === "booked" ? " pk" : ""}">${num.get(s.id)} · ${hhmm(s.s)}</span>`).join("") || `<span class="subw" style="font-size:13px">Nothing today</span>`}</span></button>`;
+  }
+  return h + `</div>`;
+}
+function ngroup(s, sel) {
+  const n = noteOf(s.id), ans = n.answers || {};
+  const asked = (s.qs || []).filter(q => { const a = ans[hash(q.t)]; return a && (a.done || a.a); });
+  return `<section class="ngroup${sel && sel.id === s.id ? " on" : ""}" id="ng-${esc(s.id)}">
+    <h3><button data-open="${esc(s.id)}">${s.hall ? "" : `<span class="time">${hhmm(s.s)}</span> `}${esc(s.short || s.title)}</button></h3>
+    ${asked.map(q => { const a = ans[hash(q.t)]; return `<div class="ans"><b>${esc(q.t)}</b>${esc(a.a || "Asked")}</div>`; }).join("")}
+    ${(s.qs || []).length ? `<div class="subw" style="font-size:13px;margin-bottom:6px">${asked.length} of ${s.qs.length} questions done</div>` : ""}
+    <textarea rows="1" placeholder="Note" data-note="${esc(s.id)}">${esc(n.text || "")}</textarea></section>`;
+}
+function renderNotes() {
+  const sel = selected();
+  let h = `<div class="sync" id="syncline"></div>`;
+  if (pack && pack.meta && pack.meta.updated) h += `<div class="subw" style="font:500 12.5px var(--f-mono);margin-top:3px">Plan updated ${esc(pack.meta.updated)}</div>`;
+  h += `<div class="lbl">To do after the event</div><textarea rows="2" placeholder="People to write to, things to send" data-note="_todo">${esc(noteOf("_todo").text || "")}</textarea>`;
+  h += `<div class="lbl">No stop, just a note</div><textarea rows="2" placeholder="Anything" data-note="_free">${esc(noteOf("_free").text || "")}</textarea>`;
+  h += `<div class="actions"><button class="btn" id="copyall">Copy all my notes</button><span class="subw" id="copied" style="align-self:center;font-size:14px"></span></div>`;
+  if (sample) h += `<div class="claude" id="claudebox"><b>Ask Claude about your notes</b>
+      <textarea rows="2" id="askq" placeholder="What should I follow up on first?" style="margin-top:8px"></textarea>
+      <div class="actions"><button class="btn primary" id="askgo">Ask</button></div><div class="answer" id="askout"></div></div>`;
+  for (const day of ["thu", "fri"]) {
+    const list = stopsOn(day); if (!list.length) continue;
+    h += `<div class="section-h">${day === "thu" ? "Thursday" : "Friday"}</div>` + list.map(s => ngroup(s, sel)).join("");
+  }
+  const hall = hallStops();
+  if (hall.length) h += `<div class="section-h">No set time</div>` + hall.map(s => ngroup(s, sel)).join("");
+  return h;
+}
+function allNotesText() {
+  const lines = [];
+  const top = (label, id) => { const t = noteOf(id).text; if (t) lines.push(`## ${label}\n${t}\n`); };
+  top("To do after the event", "_todo"); top("Other notes", "_free");
+  const stops = [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops()];
+  for (const s of stops) {
+    const n = noteOf(s.id), ans = n.answers || {};
+    const qa = (s.qs || []).map(q => [q, ans[hash(q.t)]]).filter(([, a]) => a && (a.done || a.a));
+    if (!n.text && !qa.length) continue;
+    lines.push(`## ${s.hall ? "" : (s.day === "thu" ? "Thu " : "Fri ") + hhmm(s.s) + " "}${s.title}`);
+    for (const [q, a] of qa) lines.push(`Q: ${q.t}\nA: ${a.a || "(asked)"}`);
+    if (n.text) lines.push(n.text);
+    lines.push("");
+  }
+  return lines.join("\n") || "No notes yet.";
+}
+let askAbort = null;
+async function ask() {
+  const q = $("askq").value.trim(), out = $("askout"); if (!q || !sample) return;
+  const open = [...stopsOn("thu"), ...stopsOn("fri")].map(s => {
+    const a = noteOf(s.id).answers || {};
+    const left = (s.qs || []).filter(x => !(a[hash(x.t)] || {}).done).map(x => x.t);
+    return left.length ? `${s.short || s.title}: ${left.join(" | ")}` : "";
+  }).filter(Boolean).join("\n");
+  const input = `You help someone at a games industry event work with their own notes. Answer briefly in plain language, short sentences. Use only what is below. If the notes don't say, say so.\n\nMY NOTES:\n${allNotesText()}\n\nQUESTIONS NOT ASKED YET:\n${open || "None"}\n\nMY QUESTION:\n${q}`;
+  if (askAbort) askAbort.abort();
+  askAbort = new AbortController();
+  out.textContent = "Thinking…";
+  try {
+    const r = await sample(input, { signal: askAbort.signal, cache: false, onText: ({ text }) => { out.textContent = text; } });
+    out.textContent = r.text;
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+    if (e && e.code === "not_granted") { const b = $("claudebox"); if (b) b.hidden = true; sample = null; return; }
+    out.textContent = (e && e.text) || "Claude can't answer right now. Your notes are safe.";
+  }
+}
+function sizeAreas() { document.querySelectorAll("main textarea").forEach(sizeOne); }
+function sizeOne(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+function paintMain() {
+  const main = $("main");
+  main.innerHTML = ui.tab === "day" ? renderDay() : ui.tab === "map" ? renderMap() : ui.tab === "notes" ? renderNotes() : renderNext();
+  sizeAreas(); paintSync();
+  const b = $("banner"), m = pack && pack.meta;
+  b.hidden = !(m && m.banner); b.textContent = m && m.banner ? m.banner : "";
+}
+function paint() { paintBar(); paintMain(); }
+function softRender() {
+  const a = document.activeElement;
+  if (a && (a.tagName === "TEXTAREA" || a.tagName === "INPUT") && $("main").contains(a)) { pendingRender = true; paintBar(); return; }
+  paint();
+}
+function reveal() {
+  if (ui.tab === "next") { window.scrollTo(0, 0); return; }
+  if (!ui.sel) return;
+  const el = $((ui.tab === "day" ? "row-" : ui.tab === "notes" ? "ng-" : "x-") + ui.sel);
+  if (el) el.scrollIntoView({ block: ui.tab === "day" ? "center" : "start" });
+}
+function select(id, opts = {}) {
+  const s = byId(id); if (!s) return;
+  ui.sel = id; ui.manualAt = Date.now();
+  if (!s.hall) ui.day = s.day;
+  paint(); if (!opts.stay) reveal();
+}
+function setTab(t) { ui.tab = t; store.set("gg.tab", t); closeSheet(); paint(); reveal(); }
+
+/* ============ sheets ============ */
+function openSheet(html) {
+  ui.sheet = true;
+  $("overlay").innerHTML = `<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true"><button class="ghost close" data-close>Close</button>${html}</div>`;
+}
+function closeSheet() { ui.sheet = false; $("overlay").innerHTML = ""; }
+function sheetArea(key) {
+  const label = (AREAS.find(a => a[0] === key) || [, "Place"])[1];
+  const list = stopsOn(ui.day).filter(s => (s.area || "") === key);
+  openSheet(`<h2>${esc(label)}</h2>${list.map(s => `<button class="pick" data-open="${esc(s.id)}"><span class="time">${hhmm(s.s)}</span><span>${esc(s.title)}<br><small class="subw">${esc(s.room)}</small></span></button>`).join("") || `<p class="subw">Nothing of yours here on this day.</p>`}`);
+}
+function sheetAbout(pid) {
+  const p = PROGRAMME.find(x => x.id === pid); if (!p) return;
+  openSheet(`<h2>${esc(p.title)}</h2><div class="subw">${hhmm(p.s)}–${hhmm(p.e)} · ${esc(p.room || "Place not listed")}</div>${p.who ? `<div style="margin-top:6px"><b>${esc(p.who)}</b>${p.comp ? " · " + esc(p.comp) : ""}</div>` : ""}<p style="white-space:pre-wrap">${rich(p.desc || "No description listed.")}</p>`);
+}
+/* ============ AI: copy the plan to your AI, paste its answer back ============ */
+const EVENT = "Games Ground Berlin, business days Thu 5 and Fri 6 November 2026, Alte Münze, Molkenmarkt 2";
+function copyText(txt) {
+  const ta = document.createElement("textarea");
+  ta.value = txt; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;width:1px;height:1px";
+  ($("overlay") || document.body).appendChild(ta); ta.select();
+  let ok = false; try { ok = document.execCommand("copy"); } catch {}
+  ta.remove();
+  if (ok) return Promise.resolve();
+  try { return navigator.clipboard.writeText(txt); } catch (e) { return Promise.reject(e); }
+}
+const FORMAT = `GG-START
+STOP: #code
+SAY: what I say first
+WALK: what I should walk out with
+QUESTION: a question I can say out loud
+HINT: why ask it, or what a good answer sounds like
+QUESTION: the next question
+LISTEN: something to listen for
+DONT: something to avoid
+WHY: why this is worth my time
+
+STOP: new
+TITLE: Meeting with someone
+DAY: Thu
+TIME: 14:00-14:30
+WHERE: Table 12
+WHO: Name, company
+QUESTION: ...
+GG-END`;
+function aiPrompt() {
+  const dn = d => d === "thu" ? "Thu" : "Fri";
+  const plan = [...stopsOn("thu"), ...stopsOn("fri"), ...hallStops(), ...allStops().filter(s => s.idea && !isActive(s))].map(s => {
+    const top = ["#" + s.id, s.hall ? "any time" : `${dn(s.day)} ${hhmm(s.s)}-${hhmm(s.e)}`, s.room, s.title, s.who, s.idea && !isAdded(s) ? "idea, not booked" : (ST[s.status] || [""])[0]].filter(Boolean).join(" · ");
+    const more = [s.note && "Note: " + s.note, s.say && "Say first: " + s.say, s.walk && "Walk out with: " + s.walk, ...(s.qs || []).map(q => "Question: " + q.t)].filter(Boolean);
+    return top + more.map(x => "\n  " + x).join("");
+  }).join("\n\n") || "Nothing yet.";
+  const prog = PROGRAMME.map(p => [`#${p.id}`, `${dn(p.day)} ${hhmm(p.s)}-${hhmm(p.e)}`, p.room, p.title, p.who, p.comp, p.track].filter(Boolean).join(" · ") + (p.desc ? "\n  " + p.desc.replace(/\s+/g, " ").trim() : "")).join("\n\n");
+  return [
+    `You are my helper for ${EVENT}. Below are my plan so far and the whole public programme. At the very end of this message I tell you the talks and meetings I have and what I want out of them. Write what I should ask and do, in the format below, so my event app can read it.`,
+    `HOW TO ANSWER\n- Put your whole answer in one code block, starting with the line GG-START and ending with the line GG-END. Anything you want to say to me goes outside the block, and keep it short.\n- One STOP block per talk or meeting, leaving a blank line between blocks. Only write blocks for what you add or change.\n- A stop already in my plan or the programme: STOP: #code, using its code below.\n- A meeting that is in neither: STOP: new, with TITLE, DAY (Thu or Fri), TIME (like 14:00-14:30), WHERE and WHO.\n- Each line is one field and stays on one line. QUESTION, LISTEN and HINT can repeat; a HINT belongs to the QUESTION above it.\n- 3 to 6 questions per stop, in the order I should ask them, each a plain sentence I can say out loud.\n- Your questions are added to the ones I already have. If I ask you to rewrite a stop's questions, add the line QUESTIONS: replace under that STOP.\n- Never invent facts about a person, company or game. Use the programme and what I tell you. If you don't know something, make it a question.`,
+    `FORMAT\n${FORMAT}`,
+    `MY PLAN SO FAR\n${plan}`,
+    `WHOLE PROGRAMME (Berlin time). Each entry: code · time · room · title · speakers · company · track, then the description.\n${prog}`,
+    `END OF PROGRAMME. Remember: one code block, GG-START to GG-END, one STOP block per talk or meeting.`,
+    `The talks and meetings I have, and what I want from them: `
+  ].join("\n\n");
+}
+const AI_KEYS = { STOP: "stop", TITLE: "title", SHORT: "short", DAY: "day", TIME: "time", WHERE: "room", ROOM: "room", WHO: "who", STATUS: "status", SAY: "say", WALK: "walk", QUESTION: "q", Q: "q", QUESTIONS: "qmode", HINT: "h", LISTEN: "listen", DONT: "dont", "DON'T": "dont", WHY: "verdict", NOTE: "note", PRACTICAL: "practical", ABOUT: "whoText", QLEAD: "qlead", REASON: "reason", NEED: "need", KIND: "kind", PROG: "prog", MORE: "more" };
+function aiLines(txt) {
+  const a = txt.search(/^\W*GG-START/mi), b = txt.search(/^\W*GG-END/mi);
+  const src = a >= 0 ? txt.slice(a, b > a ? b : undefined) : txt;
+  return src.split(/\r?\n/).map(l => l.replace(/^[\s>*_#-]*(\d+[.)]\s*)?/, "").replace(/\*\*|__/g, "").trim());
+}
+function parseDay(v) { const x = v.toLowerCase(); return /^(thu|5\b|05\b)/.test(x) ? "thu" : /^(fri|6\b|06\b)/.test(x) ? "fri" : null; }
+function parseTime(v) {
+  const m = v.match(/(\d{1,2})[:.h](\d{2})(?:\s*(?:-|–|—|to|bis)\s*(\d{1,2})[:.h](\d{2}))?/i);
+  if (!m) return null;
+  const s = +m[1] * 60 + +m[2];
+  return { s, e: m[3] ? +m[3] * 60 + +m[4] : s + 30 };
+}
+function guessArea(room) {
+  const r = (room || "").toLowerCase();
+  const hit = [["portal", "portal"], ["relic", "relic"], ["cage", "cage"], ["intrapren", "intra"], ["keller", "keller"], ["galerie", "galerie"], ["regist", "reg"], ["mentor", "mentor"], ["meet to match", "mtm"], ["table", "mtm"]].find(([k]) => r.includes(k));
+  return hit ? hit[1] : "";
+}
+const slug = t => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32);
+const STATUS_IN = { confirmed: "confirmed", booked: "booked", waiting: "pending", pending: "pending", plan: "planned", planned: "planned", proposed: "proposed", idea: "proposed", cancel: "to cancel", "to cancel": "to cancel" };
+const KINDS = ["talk", "meeting", "mentor", "social", "hallway"];
+const unline = v => v.replace(/\\n/g, "\n");   // a typed \n in a pasted value is a line break
+/* text -> a list of changes, nothing applied yet */
+function aiParse(txt) {
+  const blocks = []; const problems = [];
+  let cur = null, lastKey = null, lastQ = null;
+  const begin = stop => { cur = { stop, f: {}, qs: [], listen: [], more: [], qsMode: "" }; blocks.push(cur); lastKey = lastQ = null; };
+  for (const line of aiLines(txt)) {
+    if (!line) { lastKey = null; continue; }
+    if (/^`+/.test(line) || /^GG-(START|END)/i.test(line)) continue;
+    const m = line.match(/^([A-Za-z']{1,10})\s*:\s*(.*)$/);
+    const key = m && AI_KEYS[m[1].toUpperCase()];
+    if (!key) {
+      if (lastKey && cur) {                       // the AI wrapped a long line
+        if (lastKey === "q") lastQ.t += " " + line;
+        else if (lastKey === "h" && lastQ) lastQ.h += " " + line;
+        else if (lastKey === "listen") cur.listen[cur.listen.length - 1] += " " + line;
+        else if (cur.f[lastKey]) cur.f[lastKey] += " " + line;
+      }
+      continue;
+    }
+    const v = m[2].trim();
+    if (key === "stop") { begin(v); continue; }
+    if (!cur) begin("");                          // questions with no STOP go on the stop you're looking at
+    if (key === "q") { if (!v) continue; lastQ = { t: v }; cur.qs.push(lastQ); lastKey = "q"; }
+    else if (key === "h") { if (lastQ && v) { lastQ.h = v; lastKey = "h"; } }
+    else if (key === "listen") { if (v) { cur.listen.push(v); lastKey = "listen"; } }
+    else if (key === "more") { const i = v.indexOf(" :: "); if (i > 0) cur.more.push({ h: v.slice(0, i), t: unline(v.slice(i + 4)) }); lastKey = null; }
+    else if (key === "qmode") { if (/replace|rewrite/i.test(v)) cur.qsMode = "replace"; lastKey = null; }
+    else { if (v) { cur.f[key] = unline(v); lastKey = key; } }
+  }
+  const ops = [];
+  for (const b of blocks) {
+    const code = b.stop.replace(/^#\s*/, "").trim(), low = code.toLowerCase();
+    const fields = {};
+    for (const k of ["title", "short", "who", "room", "say", "walk", "dont", "verdict", "note", "practical", "whoText", "qlead", "reason", "need"]) if (b.f[k]) fields[k] = b.f[k];
+    if (b.f.kind && KINDS.includes(b.f.kind.toLowerCase())) fields.kind = b.f.kind.toLowerCase();
+    if (b.f.prog && PROGRAMME.some(p => p.id === b.f.prog.toLowerCase())) fields.prog = b.f.prog.toLowerCase();
+    if (b.more.length) fields.extra = b.more;
+    if (b.f.room) fields.area = guessArea(b.f.room);
+    if (b.f.status && STATUS_IN[b.f.status.toLowerCase()]) { fields.status = STATUS_IN[b.f.status.toLowerCase()]; fields.idea = fields.status === "proposed"; }
+    if (b.listen.length) fields.listen = b.listen;
+    const day = b.f.day ? parseDay(b.f.day) : null, time = b.f.time ? parseTime(b.f.time) : null;
+    if (b.f.day && !day) problems.push(`${code || b.f.title || "Stop"}: "${b.f.day}" isn't Thu or Fri.`);
+    if (b.f.time && !time) problems.push(`${code || b.f.title || "Stop"}: couldn't read the time "${b.f.time}".`);
+    let id = null, kind = "update", prog = null;
+    const known = code && byId(low);
+    if (!code && !b.stop) { id = ui.sel; if (!id) { problems.push("Some questions have no STOP line and no stop is selected."); continue; } }
+    else if (known) id = known.id;
+    else if (/^p\d+$/i.test(low) && PROGRAMME.some(p => p.id === low)) {
+      const linked = allStops().find(s => s.prog === low);
+      if (linked) id = linked.id; else { id = "p:" + low; kind = "add"; prog = low; }
+    } else if (low.startsWith("m:")) {                // your own stop with a fixed code: pasting it again updates it, even if the title changed
+      if (!b.f.title) { problems.push(`#${code}: a new stop needs a TITLE, so I left it out.`); continue; }
+      id = low; kind = "new";
+    } else if (low === "new" || b.f.title) {
+      if (!b.f.title) { problems.push("A new stop has no TITLE, so I left it out."); continue; }
+      id = "m:" + (day || "any") + "-" + slug(b.f.title);
+      kind = byId(id) ? "update" : "new";
+    } else { problems.push(`#${code}: no stop or talk has this code, so I left it out.`); continue; }
+    if (day && !time && kind !== "new") { const cur0 = byId(id); if (cur0 && cur0.s != null) { fields.day = day; fields.s = cur0.s; fields.e = cur0.e; fields.hall = false; } }
+    if (time) { const cur0 = byId(id); const dd = day || (cur0 && cur0.day !== "any" && cur0.day) || null;
+      if (dd) { fields.day = dd; fields.s = time.s; fields.e = time.e; fields.hall = false; } else problems.push(`${b.f.title || code}: has a time but no day, so it goes under "No set time".`); }
+    if (kind === "new" && fields.s == null) { fields.hall = true; fields.day = "any"; fields.s = null; fields.e = null; }
+    if (kind === "new" && !fields.short) fields.short = b.f.title.slice(0, 18);
+    if (!Object.keys(fields).length && !b.qs.length) { problems.push(`${code}: nothing to add under this STOP.`); continue; }
+    ops.push({ id, kind, prog, fields, qs: b.qs, qsMode: b.qsMode });
+  }
+  return { ops, problems };
+}
+function opLabel(op) {
+  const cur = byId(op.id), p = op.prog && PROGRAMME.find(x => x.id === op.prog);
+  const name = op.fields.title || (cur && (cur.short || cur.title)) || (p && p.title) || op.id;
+  const have = new Set(((cur && cur.qs) || []).map(q => qKey(q.t)));
+  const nq = op.qs.filter(q => !have.has(qKey(q.t))).length;
+  const bits = [];
+  if (op.kind === "new") bits.push("new stop");
+  if (op.kind === "add") bits.push("added to your day");
+  if (nq) bits.push(op.qsMode === "replace" ? `${nq} new, old questions replaced` : `${nq} new question${nq > 1 ? "s" : ""}`);
+  else if (op.qsMode === "replace") bits.push("questions replaced");
+  const other = Object.keys(op.fields).filter(k => !["short", "area", "hall"].includes(k));
+  if (other.length && op.kind === "update") bits.push(other.length === 1 ? "1 field updated" : `${other.length} fields updated`);
+  return { name, text: bits.join(", ") || "no change" };
+}
+function aiShow() {
+  const f = $("aifound"), btn = $("aigo"); if (!f) return;
+  const txt = ui.aiDraft || "";
+  if (!txt.trim()) { f.innerHTML = ""; btn.disabled = true; return; }
+  const { ops, problems } = aiParse(txt);
+  btn.disabled = !ops.length;
+  btn.textContent = ops.length ? `Add to my app (${ops.length})` : "Add to my app";
+  f.innerHTML = (ops.length ? `<b>Found:</b><ul>${ops.map(o => { const l = opLabel(o); return `<li><b>${esc(l.name)}:</b> ${esc(l.text)}</li>`; }).join("")}</ul>`
+    : `<p>Nothing I can use yet. Paste the AI's whole answer, or the part from GG-START to GG-END.</p>`)
+    + (problems.length ? `<ul class="bad">${problems.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+}
+function sheetAI(msg) {
+  const undo = store.get("gg.undo", null);
+  openSheet(`<h2>Fill it with your AI</h2>
+    <p><span class="step">1.</span> Tap Copy and paste it into your AI (Claude, ChatGPT, Gemini…). Right after it, type the talks and meetings you have and what you want from them. It gets your plan, your questions and the whole programme, not your notes.</p>
+    <button class="btn primary" id="aicopy">Copy</button> <span class="subw" id="aicopied" style="font-size:14px"></span>
+    <p style="margin-top:16px"><span class="step">2.</span> Copy the AI's answer and paste it here. New questions are added to your stops. Your answers and notes stay.</p>
+    <textarea id="aiin" rows="3" placeholder="Paste the AI's answer" aria-label="AI answer">${esc(ui.aiDraft || "")}</textarea>
+    <div class="aifound" id="aifound"></div>
+    <div class="actions"><button class="btn primary" id="aigo" disabled>Add to my app</button><label class="btn" style="position:relative;display:inline-flex;align-items:center;cursor:pointer"><input type="file" id="aifile" accept=".txt,text/plain" style="position:absolute;inset:0;opacity:0;width:100%;height:100%" aria-label="Pick a text file">Pick a text file</label>${undo ? `<button class="btn" id="aiundo">Undo last paste</button>` : ""}</div>
+    ${msg ? `<p class="okline">${esc(msg)}</p>` : ""}
+    <details class="more"><summary>The format, if you write it by hand</summary><div class="in"><pre class="fmt">${esc(FORMAT)}</pre></div></details>`);
+  aiShow();
+  const t = $("aiin"); if (t) { t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight + 2, 220) + "px"; }
+}
+function aiCopy() {
+  const m = $("aicopied"), txt = aiPrompt();
+  copyText(txt).then(() => { m.textContent = "Copied. Now paste it into your AI."; }, () => {
+    m.textContent = "Couldn't copy. Select all of this and copy it:";
+    const ta = document.createElement("textarea");
+    ta.readOnly = true; ta.value = txt; ta.style.cssText = "height:120px;overflow:auto;margin-top:8px";
+    m.after(ta); ta.focus(); ta.select();
+  });
+}
+function aiApply() {
+  const { ops } = aiParse(ui.aiDraft || ""); if (!ops.length) return;
+  store.set("gg.undo", { mine, added: dayState.added });
+  mine = JSON.parse(JSON.stringify(mine));
+  let qCount = 0;
+  for (const op of ops) {
+    const cur = byId(op.id), ov = mine.stops[op.id] || {};
+    const next = { ...ov, ...op.fields };
+    if (op.qsMode === "replace") {
+      const ans = noteOf(op.id).answers || {};
+      const kept = ((cur && cur.qs) || []).filter(q => { const a = ans[hash(q.t)]; return a && (a.done || a.a); });  // answered questions never vanish
+      next.qs = mergeQs(kept, op.qs); next.qsMode = "replace";
+    } else if (op.qs.length) next.qs = mergeQs(ov.qs, op.qs);
+    qCount += op.qs.length;
+    mine.stops[op.id] = next;
+    if (op.kind === "add") { const s = new Set(dayState.added); s.add(op.id); dayState.added = [...s]; }
+  }
+  mine.t = Date.now(); store.set("gg.mine", mine); markDirty("mine");
+  if (ops.some(o => o.kind === "add")) { dayState.t = Date.now(); store.set("gg.state", dayState); markDirty("state"); }
+  fresh();
+  ui.aiDraft = "";
+  if (!selected()) { const c = currentStop(ui.day); ui.sel = c ? c.id : null; }
+  paint();
+  sheetAI(`Done. ${ops.length} stop${ops.length > 1 ? "s" : ""}, ${qCount} question${qCount === 1 ? "" : "s"}.`);
+}
+function aiUndo() {
+  const u = store.get("gg.undo", null); if (!u) return;
+  mine = { stops: u.mine.stops || {}, t: Date.now() }; store.set("gg.mine", mine); markDirty("mine");
+  dayState.added = u.added || []; dayState.t = Date.now(); store.set("gg.state", dayState); markDirty("state");
+  store.set("gg.undo", null); fresh();
+  if (!selected()) { const c = currentStop(ui.day); ui.sel = c ? c.id : null; }
+  paint(); sheetAI("Last paste undone.");
+}
+/* ============ floor plan photo ============ */
+async function shrinkPhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+    for (const [w, qual] of [[1400, .72], [1200, .66], [1000, .6], [800, .55], [640, .5]]) {
+      const c = document.createElement("canvas"), k = Math.min(1, w / img.naturalWidth);
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const data = c.toDataURL("image/jpeg", qual);
+      if (data.length < 200000) return data;
+    }
+  } finally { URL.revokeObjectURL(url); }
+  return null;
+}
+async function addPlan(file) {
+  try {
+    const data = await shrinkPhoto(file);
+    if (!data) return;
+    plan = { data, t: Date.now() };
+    store.set("gg.plan", plan); markDirty("plan_photo"); paint();
+  } catch { /* an unreadable photo: nothing changes */ }
+}
+/* ============ events ============ */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button,[data-close],[data-tab]"); if (!t) return;
+  const d = t.dataset;
+  if ("close" in d) { closeSheet(); return; }
+  if (d.day) { ui.day = d.day; const c = currentStop(d.day); ui.sel = c ? c.id : null; ui.manualAt = Date.now(); paint(); reveal(); return; }
+  if (d.tab) { setTab(d.tab); return; }
+  if (d.sel) {
+    const toggleOff = ui.tab === "day" && ui.sel === d.sel && t.classList.contains("head");
+    select(d.sel, { stay: ui.tab === "day" && t.classList.contains("head") });
+    if (t.classList.contains("then")) window.scrollTo(0, 0);
+    if (toggleOff) return;
+    return;
+  }
+  if (d.open) { closeSheet(); ui.tab = "next"; store.set("gg.tab", "next"); select(d.open); return; }
+  if (d.area !== undefined) { sheetArea(d.area); return; }
+  if (d.about) { sheetAbout(d.about); return; }
+  if (d.tick) { const [id, k] = d.tick.split("|"); const s = byId(id); const q = s && (s.qs || []).find(x => hash(x.t) === k);
+    changeNote(id, n => { const a = n.answers[k] || { q: q ? q.t : "", a: "", done: false }; a.done = !a.done; n.answers[k] = a; }); paintMain(); return; }
+  if (d.qopen) { const key = "open_" + d.qopen.replace("|", ""); ui[key] = !ui[key]; paintMain(); return; }
+  if (d.add) { setStateList("added", d.add, true); setStateList("skipped", d.add, false); if (!selected()) { const c = currentStop(ui.day); ui.sel = c ? c.id : null; } paint(); return; }
+  if (d.remove) { setStateList("added", d.remove, false); if (ui.sel === d.remove) { const c = currentStop(ui.day); ui.sel = c ? c.id : null; } paint(); return; }
+  if (d.skip) { setStateList("skipped", d.skip, true); paint(); return; }
+  if (d.unskip) { setStateList("skipped", d.unskip, false); paint(); return; }
+  if ("zoom" in d) { $("overlay").innerHTML = `<div class="zoom"><img alt="Floor plan" src="${esc(plan.data)}"><button class="ghost" data-close>Close</button></div>`; return; }
+  if ("planoff" in d) { plan = null; store.set("gg.plan", null); plan = null; dirty.add("plan_photo"); markDirty("plan_photo"); paint(); return; }
+  if (t.id === "nowBtn") { ui.manualAt = 0; followNow(); paint(); reveal(); return; }
+  if (t.id === "themeBtn") { setTheme(curTheme() === "light" ? "dark" : "light"); return; }
+  if (t.id === "copyall") { const m = $("copied"); copyText(allNotesText()).then(() => m.textContent = "Copied", () => m.textContent = "Copy failed. Select text in Notes instead."); return; }
+  if (t.id === "aiBtn" || "ai" in d) { sheetAI(); return; }
+  if (t.id === "aicopy") { aiCopy(); return; }
+  if (t.id === "aigo") { aiApply(); return; }
+  if (t.id === "aiundo") { aiUndo(); return; }
+  if (t.id === "askgo") { ask(); return; }
+});
+document.addEventListener("input", e => {
+  const t = e.target, d = t.dataset;
+  if (d.note) { changeNote(d.note, n => { n.text = t.value; }); sizeOne(t); return; }
+  if (d.ans) { const [id, k] = d.ans.split("|"); changeNote(id, n => { const a = n.answers[k] || { q: d.q, a: "", done: false }; a.a = t.value; a.q = d.q; n.answers[k] = a; }); sizeOne(t); return; }
+  if (t.id === "aiin") { ui.aiDraft = t.value; aiShow(); return; }
+  if (t.id === "progq") { ui.progQ = t.value; $("proglist").innerHTML = progList(); return; }
+  if (t.tagName === "TEXTAREA") sizeOne(t);
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "planfile" && e.target.files[0]) addPlan(e.target.files[0]);
+  if (e.target.id === "aifile" && e.target.files[0]) e.target.files[0].text().then(t => { ui.aiDraft = t; const a = $("aiin"); if (a) a.value = t; aiShow(); });
+});
+document.addEventListener("focusout", () => { setTimeout(() => { if (pendingRender && !(document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) { pendingRender = false; paint(); } }, 150); });
+document.addEventListener("toggle", e => { if (e.target.id === "progbox") ui.progOpen = e.target.open; }, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+/* the notch timeline: tap or drag */
+function dayAt(e) {
+  const r = $("dl-in").getBoundingClientRect(), list = stopsOn(ui.day); if (!list.length) return;
+  const x = e.clientX - r.left;
+  let best = null, bd = 1e9;
+  for (const s of list) {
+    const px = (s.s - span.a) / (span.b - span.a) * r.width, d = Math.abs(px - x);
+    if (d < bd - .01) { best = s; bd = d; }
+  }
+  if (best && best.id !== ui.sel) select(best.id);
+}
+const dl = $("dayline");
+dl.addEventListener("pointerdown", e => { try { dl.setPointerCapture(e.pointerId); } catch {} dayAt(e); e.preventDefault(); });
+dl.addEventListener("pointermove", e => { if (dl.hasPointerCapture && dl.hasPointerCapture(e.pointerId)) dayAt(e); });
+dl.addEventListener("keydown", e => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const list = stopsOn(ui.day), i = list.findIndex(s => s.id === ui.sel);
+  const nx = list[Math.max(0, Math.min(list.length - 1, i + (e.key === "ArrowRight" ? 1 : -1)))];
+  if (nx) select(nx.id); e.preventDefault();
+});
+
+/* theme: dark unless you switch */
+const curTheme = () => document.documentElement.dataset.ggTheme || "dark";
+const ICON = {
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5 5l1.8 1.8M17.2 17.2 19 19M5 19l1.8-1.8M17.2 6.8 19 5"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>'
+};
+function setTheme(t) {
+  document.documentElement.dataset.ggTheme = t; store.set("gg.theme", t);
+  $("themeBtn").innerHTML = t === "light" ? ICON.moon : ICON.sun;
+  $("themeBtn").setAttribute("aria-label", t === "light" ? "Switch to dark" : "Switch to light");
+}
+
+/* clock: every 20 s. Follows the day unless you moved in the last 5 minutes. */
+function tick() {
+  const typing = document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName);
+  if (Date.now() - ui.manualAt > 300000 && todayKey() && !typing && !ui.sheet) {
+    const before = ui.sel, dayBefore = ui.day;
+    followNow();
+    if (before !== ui.sel || dayBefore !== ui.day) { paint(); if (ui.tab === "next") window.scrollTo(0, 0); return; }
+  }
+  paintBar();
+  const c = $("countEl"), s = selected();
+  if (c && s) { const v = countdown(s); c.textContent = v.t; c.className = "count" + (v.done ? " done" : ""); }
+}
+
+setTheme(store.get("gg.theme", "dark"));
+followNow();
+paint();
+setInterval(tick, 20000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); scheduleFlush(100); } });
+connect();
+</script>
+<script>if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",function(){navigator.serviceWorker.register("sw.js");if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()})</script></body></html>
