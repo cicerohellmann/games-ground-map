@@ -899,7 +899,7 @@ function aiParse(txt) {
     if (day && !time && kind !== "new") { const cur0 = byId(id); if (cur0 && cur0.s != null) { fields.day = day; fields.s = cur0.s; fields.e = cur0.e; fields.hall = false; } }
     if (time) { const cur0 = byId(id); const dd = day || (cur0 && cur0.day !== "any" && cur0.day) || null;
       if (dd) { fields.day = dd; fields.s = time.s; fields.e = time.e; fields.hall = false; } else problems.push(`${b.f.title || code}: has a time but no day, so it goes under "No set time".`); }
-    if (kind === "new" && fields.s == null) { fields.hall = true; fields.day = "any"; fields.s = null; fields.e = null; }
+    if ((kind === "new" || b.reset) && fields.s == null) { fields.hall = true; fields.day = "any"; fields.s = null; fields.e = null; }
     if (kind === "new" && !fields.short) fields.short = b.f.title.slice(0, 18);
     if (!Object.keys(fields).length && !b.qs.length) { problems.push(`${code}: nothing to add under this STOP.`); continue; }
     ops.push({ id, kind, prog, fields, qs: b.qs, qsMode: b.qsMode, reset: !!b.reset });
@@ -934,7 +934,7 @@ function aiShow() {
 }
 function sheetAI(msg) {
   const undo = store.get("gg.undo", null);
-  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 5</p>
+  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 6</p>
     <p><span class="step">1.</span> Tap Copy and paste it into your AI (Claude, ChatGPT, Gemini…). Right after it, type the talks and meetings you have and what you want from them. It gets your plan, your questions and the whole programme, not your notes.</p>
     <button class="btn primary" id="aicopy">Copy</button> <span class="subw" id="aicopied" style="font-size:14px"></span>
     <p style="margin-top:16px"><span class="step">2.</span> Copy the AI's answer and paste it here. New questions are added to your stops. Your answers and notes stay.</p>
@@ -973,6 +973,10 @@ function aiApply() {
     if (op.qsMode === "replace") {
       const ans = noteOf(op.id).answers || {};
       const kept = ((cur && cur.qs) || []).filter(q => { const a = ans[hash(q.t)]; return a && (a.done || a.a); });  // answered questions never vanish
+      for (const k of kept) {  // same question, reworded punctuation: the answer follows it. The old entry stays, so undo still finds it
+        const nq = op.qs.find(q => qKey(q.t) === qKey(k.t)), a = ans[hash(k.t)];
+        if (nq && hash(nq.t) !== hash(k.t) && !ans[hash(nq.t)]) changeNote(op.id, n => { n.answers[hash(nq.t)] = { ...a, q: nq.t }; });
+      }
       next.qs = mergeQs(op.qs, kept.filter(k => !op.qs.some(q => qKey(q.t) === qKey(k.t)))); next.qsMode = "replace";  // the new order and hints win; old answered ones go last
     } else if (op.qs.length) next.qs = mergeQs(ov.qs, op.qs);
     qCount += op.qs.length;
@@ -985,7 +989,8 @@ function aiApply() {
   ui.aiDraft = "";
   if (!selected()) { const c = currentStop(ui.day); ui.sel = c ? c.id : null; }
   paint();
-  sheetAI(`Done. ${ops.length} stop${ops.length > 1 ? "s" : ""}, ${qCount} question${qCount === 1 ? "" : "s"}.`);
+  const nStops = ops.filter(o => o.kind !== "remove").length;
+  sheetAI(`Done. ${nStops} stop${nStops === 1 ? "" : "s"}, ${qCount} question${qCount === 1 ? "" : "s"}.`);
 }
 function aiUndo() {
   const u = store.get("gg.undo", null); if (!u) return;
