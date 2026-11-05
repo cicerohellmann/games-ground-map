@@ -243,7 +243,7 @@ const AREAS = [
 ];
 const ST = {
   confirmed: ["Confirmed", "confirmed"], booked: ["Booked", "booked"], pending: ["Waiting", "pending"],
-  planned: ["Plan", ""], "not booked": ["Not booked", "pending"], "to cancel": ["To cancel", "cancel"], proposed: ["Idea · not booked", "idea"], pick: ["My pick", ""]
+  planned: ["Plan", ""], "not booked": ["Not booked", "pending"], check: ["Check", "pending"], "to cancel": ["To cancel", "cancel"], proposed: ["Idea · not booked", "idea"], pick: ["My pick", ""]
 };
 const PROGRAMME = (() => { try { return JSON.parse($("programme").textContent); } catch { return []; } })();
 
@@ -832,7 +832,7 @@ function guessArea(room) {
   return hit ? hit[1] : "";
 }
 const slug = t => String(t).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32);
-const STATUS_IN = { confirmed: "confirmed", booked: "booked", waiting: "pending", pending: "pending", plan: "planned", planned: "planned", "not booked": "not booked", proposed: "proposed", idea: "proposed", cancel: "to cancel", "to cancel": "to cancel" };
+const STATUS_IN = { check: "check", confirmed: "confirmed", booked: "booked", waiting: "pending", pending: "pending", plan: "planned", planned: "planned", "not booked": "not booked", proposed: "proposed", idea: "proposed", cancel: "to cancel", "to cancel": "to cancel" };
 const KINDS = ["talk", "meeting", "mentor", "social", "hallway"];
 const unline = v => v.replace(/\\n/g, "\n");   // a typed \n in a pasted value is a line break
 /* text -> a list of changes, nothing applied yet */
@@ -934,7 +934,7 @@ function aiShow() {
 }
 function sheetAI(msg) {
   const undo = store.get("gg.undo", null);
-  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 3</p>
+  openSheet(`<h2>Fill it with your AI</h2><p class="subw" style="font-size:13px;margin:0">App version 4</p>
     <p><span class="step">1.</span> Tap Copy and paste it into your AI (Claude, ChatGPT, Gemini…). Right after it, type the talks and meetings you have and what you want from them. It gets your plan, your questions and the whole programme, not your notes.</p>
     <button class="btn primary" id="aicopy">Copy</button> <span class="subw" id="aicopied" style="font-size:14px"></span>
     <p style="margin-top:16px"><span class="step">2.</span> Copy the AI's answer and paste it here. New questions are added to your stops. Your answers and notes stay.</p>
